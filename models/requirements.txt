@@ -5,3 +5,6 @@ albumentations
 ultralytics
 timm
 sam2
+FlagEmbedding
+qdrant-client
+google-generativeai
