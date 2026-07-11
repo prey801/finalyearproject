@@ -137,11 +137,11 @@ Run unit tests to verify database, ML wrappers, chunking logic, and RAG retrieva
 
 ```bash
 # Run ingestion chunker and RAG LLM tests
-TESTING=true pytest tests/test_rag_ingestion.py tests/test_rag_llm.py
+TESTING=true python3 -m pytest tests/test_rag_ingestion.py tests/test_rag_llm.py
 
 # Run primary model wrapper tests (mocks loaded by default)
-TESTING=true pytest tests/test_primary_models.py
+TESTING=true python3 -m pytest tests/test_primary_models.py
 
 # Run all test suites
-TESTING=true pytest
+TESTING=true python3 -m pytest
 ```
