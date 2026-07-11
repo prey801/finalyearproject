@@ -102,7 +102,7 @@ def train_classification(
 
         # Use GradScaler only when training on CUDA
         use_amp = device != "cpu" and torch.cuda.is_available()
-        scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
+        scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
 
         for epoch in range(epochs):
             model.train()
