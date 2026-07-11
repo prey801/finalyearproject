@@ -19,8 +19,9 @@ class BGEM3EmbeddingModel:
         self.load_model()
         
     def load_model(self) -> None:
-        if BGEM3FlagModel is None:
-            print("Warning: FlagEmbedding package not found. Using stub embedding.")
+        import os
+        if BGEM3FlagModel is None or os.environ.get("TESTING") == "true":
+            print("Warning: FlagEmbedding package not found or running in test mode. Using stub embedding.")
             return
             
         try:
