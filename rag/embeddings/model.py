@@ -1,9 +1,13 @@
 from typing import List, Dict, Union, Any
 import numpy as np
-try:
-    from FlagEmbedding import BGEM3FlagModel
-except ImportError:
+import os
+if os.environ.get("TESTING") == "true":
     BGEM3FlagModel = None
+else:
+    try:
+        from FlagEmbedding import BGEM3FlagModel
+    except ImportError:
+        BGEM3FlagModel = None
 
 class BGEM3EmbeddingModel:
     """
