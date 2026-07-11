@@ -1,4 +1,4 @@
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Any
 import numpy as np
 try:
     from FlagEmbedding import BGEM3FlagModel

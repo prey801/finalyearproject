@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 2
+names: ['ALL Negative Cells', 'ALL Positive Cell']
+
+roboflow:
+  workspace: leukemia
+  project: leukemia-2.0
+  version: 1
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/leukemia/leukemia-2.0/dataset/1

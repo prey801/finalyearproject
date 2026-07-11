@@ -11,3 +11,9 @@ google-generativeai
 open_clip_torch
 flwr
 torch_geometric
+mlflow
+dvc[s3]
+wandb
+boto3
+grad-cam
+shap
