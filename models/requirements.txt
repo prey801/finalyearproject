@@ -8,3 +8,6 @@ sam2
 FlagEmbedding
 qdrant-client
 google-generativeai
+open_clip_torch
+flwr
+torch_geometric
