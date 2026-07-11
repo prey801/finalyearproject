@@ -1,0 +1,7 @@
+torch
+torchvision
+opencv-python
+albumentations
+ultralytics
+timm
+sam2
