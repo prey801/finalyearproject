@@ -1,13 +1,13 @@
 torch
 torchvision
-opencv-python
+opencv-python-headless
 albumentations
 ultralytics
 timm
 sam2
 FlagEmbedding
 qdrant-client
-google-generativeai
+openai
 open_clip_torch
 flwr
 torch_geometric

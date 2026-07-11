@@ -69,20 +69,22 @@ class QdrantVectorStore:
         if self.client is None:
             print("Stub: Searching vectors.")
             return [{"text": "Stub guideline result", "score": 0.99}]
-            
-        search_result = self.client.search(
+
+        # qdrant-client >= 1.7 uses query_points() — .search() was removed.
+        vec = query_vector.tolist() if hasattr(query_vector, "tolist") else query_vector
+        response = self.client.query_points(
             collection_name=self.collection_name,
-            query_vector=query_vector.tolist() if hasattr(query_vector, "tolist") else query_vector,
-            limit=limit
+            query=vec,
+            limit=limit,
         )
-        
+
         results = []
-        for hit in search_result:
+        for hit in response.points:
             results.append({
                 "id": hit.id,
                 "score": hit.score,
                 "payload": hit.payload,
-                "text": hit.payload.get("text", "") if hit.payload else ""
+                "text": hit.payload.get("text", "") if hit.payload else "",
             })
-            
+
         return results
