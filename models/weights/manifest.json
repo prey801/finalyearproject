@@ -1,0 +1,12 @@
+{
+  "generated_at_utc": "2026-07-14T14:22:54.801887+00:00",
+  "weights": [
+    {
+      "model": "detection",
+      "file": "models/weights/yolov11_malaria_best.pt",
+      "source": "runs/detect/medscope_yolo/yolo11n_malaria/weights/best.pt",
+      "bytes": 5480410,
+      "sha256": "75bec56055a16a107535ea01a5fe245040d78b3cecc0e2a75befa054c89245db"
+    }
+  ]
+}

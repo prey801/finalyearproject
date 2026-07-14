@@ -54,9 +54,15 @@ class ObjectDetectionModel(BaseModel):
         for result in results:
             boxes = result.boxes
             for box in boxes:
-                x1, y1, x2, y2 = box.xyxy[0].tolist()
-                conf = box.conf[0].item()
-                cls_idx = int(box.cls[0].item())
+                coords = box.xyxy[0]
+                if hasattr(coords, 'tolist'):
+                    x1, y1, x2, y2 = coords.tolist()
+                else:
+                    x1, y1, x2, y2 = coords
+                c = box.conf[0]
+                conf = float(c.item()) if hasattr(c, 'item') else float(c)
+                cid = box.cls[0]
+                cls_idx = int(cid.item()) if hasattr(cid, 'item') else int(cid)
                 
                 # Map class index to class name
                 class_name = self.classes.get(cls_idx, f"class_{cls_idx}")
