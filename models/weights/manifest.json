@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-07-14T14:22:54.801887+00:00",
+  "generated_at_utc": "2026-07-14T14:49:05.355777+00:00",
   "weights": [
     {
       "model": "detection",
@@ -7,6 +7,20 @@
       "source": "runs/detect/medscope_yolo/yolo11n_malaria/weights/best.pt",
       "bytes": 5480410,
       "sha256": "75bec56055a16a107535ea01a5fe245040d78b3cecc0e2a75befa054c89245db"
+    },
+    {
+      "model": "classification",
+      "file": "models/weights/swin_malaria_best.pth",
+      "source": "runs/classification/swin_tiny_patch4_window7_224_malaria_best.pth",
+      "bytes": 110157931,
+      "sha256": "552039388534b2061550df0e05413b2609c90a85914cb7d5c4c1537e5a74eb03"
+    },
+    {
+      "model": "classification",
+      "file": "models/weights/swin_malaria_best.pth",
+      "source": "runs/classification/swin_tiny_patch4_window7_224_malaria.pth",
+      "bytes": 110156908,
+      "sha256": "b640887852cd0bcf05ccec0bfcde391a1dbf0a23ac3e948a3b189e56ed97654a"
     }
   ]
 }
