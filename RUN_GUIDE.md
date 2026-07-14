@@ -29,8 +29,7 @@ conda config --add channels defaults
 conda config --add channels conda-forge
 
 # Create and activate environment
-conda create -n medscope_env python=3.10
-conda activate medscope_env
+pip install "aiobotocore==2.13.0" "boto3==1.34.106" "botocore==1.34.106"
 
 # Install matching versions first to prevent backtracking loops
 pip install "aiobotocore==2.13.0" "boto3==1.34.106" "botocore==1.34.106"
@@ -137,11 +136,11 @@ Run unit tests to verify database, ML wrappers, chunking logic, and RAG retrieva
 
 ```bash
 # Run ingestion chunker and RAG LLM tests
-TESTING=true python3 -m pytest tests/test_rag_ingestion.py tests/test_rag_llm.py
+TESTING=true pytest tests/test_rag_ingestion.py tests/test_rag_llm.py
 
 # Run primary model wrapper tests (mocks loaded by default)
-TESTING=true python3 -m pytest tests/test_primary_models.py
+TESTING=true pytest tests/test_primary_models.py
 
 # Run all test suites
-TESTING=true python3 -m pytest
+TESTING=true pytest
 ```

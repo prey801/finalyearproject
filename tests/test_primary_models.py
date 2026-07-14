@@ -3,13 +3,15 @@ from unittest.mock import patch, MagicMock
 from PIL import Image
 import numpy as np
 
-# Import the models (assumes dependencies like torch, timm, ultralytics are installed)
-# In a CI environment without weights/gpu, we might mock the load_model methods.
-# For these basic tests, we'll mock the backends to test the wrapper logic.
+# Import modules so patch can resolve them
+import models.quality.model
+import models.yolo.model
+import models.segmentation.model
+import models.classification.model
 
 class TestPrimaryModels(unittest.TestCase):
     
-    @patch('models.quality.model.timm.create_model')
+    @patch('models.quality.model.timm.create_model', create=True)
     def test_quality_model(self, mock_create_model):
         from models.quality.model import QualityAssessmentModel
         
@@ -27,7 +29,7 @@ class TestPrimaryModels(unittest.TestCase):
         
         self.assertEqual(result, "Blurred") # 0.8 is index 1
 
-    @patch('models.yolo.model.YOLO')
+    @patch('models.yolo.model.YOLO', create=True)
     def test_yolo_model(self, mock_yolo_cls):
         from models.yolo.model import ObjectDetectionModel
         
@@ -79,7 +81,7 @@ class TestPrimaryModels(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].shape, (100, 100))
 
-    @patch('models.classification.model.timm.create_model')
+    @patch('models.classification.model.timm.create_model', create=True)
     def test_classification_model(self, mock_create_model):
         from models.classification.model import DiseaseClassificationModel
         

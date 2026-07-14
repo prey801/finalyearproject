@@ -3,13 +3,7 @@ import torch
 import numpy as np
 from PIL import Image
 
-# Using documented SAM2 imports. If the environment uses a different package structure,
-# this import may need to be adjusted (e.g. from sam2.build_sam import build_sam2)
-try:
-    from sam2.build_sam import build_sam2
-    from sam2.sam2_image_predictor import SAM2ImagePredictor
-except ImportError:
-    SAM2ImagePredictor = None
+# SAM2 packages will be imported lazily inside load_model
 
 from models.base import BaseModel
 
@@ -28,6 +22,12 @@ class SegmentationModel(BaseModel):
         self.load_model()
 
     def load_model(self) -> None:
+        try:
+            from sam2.build_sam import build_sam2
+            from sam2.sam2_image_predictor import SAM2ImagePredictor
+        except ImportError:
+            SAM2ImagePredictor = None
+
         if SAM2ImagePredictor is None:
             print("Warning: sam2 package not found. Using stub implementation.")
             return

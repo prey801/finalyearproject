@@ -44,7 +44,6 @@ async def analyze_image(
         
     try:
         p = get_pipeline()
-        await asyncio.sleep(2) # Simulate ML processing delay for frontend dev
         result = await asyncio.to_thread(p.process_image, image, patient_id=patient_id, specimen_type=specimen_type)
         
         # Save to database

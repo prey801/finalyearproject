@@ -1,6 +1,5 @@
 import torch
 import torch.nn.functional as F
-import timm
 from torchvision import transforms
 from PIL import Image
 import numpy as np
@@ -26,6 +25,7 @@ class QualityAssessmentModel(BaseModel):
         self.load_model()
 
     def load_model(self) -> None:
+        import timm
         # Load a pretrained EfficientNet-B0. 
         # For now, we use standard ImageNet weights, adjusting the head for 5 classes.
         self.model = timm.create_model('efficientnet_b0', pretrained=True, num_classes=len(self.classes))

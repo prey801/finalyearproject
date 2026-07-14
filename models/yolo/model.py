@@ -2,7 +2,6 @@ import os
 import logging
 from typing import List, Dict, Any
 from PIL import Image
-from ultralytics import YOLO
 
 from models.base import BaseModel
 
@@ -22,8 +21,9 @@ class ObjectDetectionModel(BaseModel):
         self.load_model()
 
     def load_model(self) -> None:
+        from ultralytics import YOLO
         # Check if we are running in a test environment or custom weights exist
-        self.weights_path = os.environ.get("YOLO_WEIGHTS_PATH", "models/yolo/best.pt")
+        self.weights_path = os.environ.get("YOLO_WEIGHTS_PATH", "models/weights/yolov11_malaria_best.pt")
         self.is_custom = os.path.exists(self.weights_path)
         
         # In a test mock context or if custom weights are found, load YOLO
