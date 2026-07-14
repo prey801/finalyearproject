@@ -8,37 +8,63 @@ def get_transforms(split="train", image_size=224):
 
     Args:
         split (str): 'train', 'val', or 'test'.
-        image_size (int): Target size for resizing.
+        image_size (int): Target size for resizing (default 224 for Swin/ResNet).
 
     Returns:
         A.Compose: Albumentations compose object.
+
+    Augmentation strategy for Swin Transformer:
+        - Geometric: flips, rotation, ShiftScaleRotate  (spatial invariance)
+        - Color: ColorJitter, CLAHE                     (stain normalisation robustness)
+        - Regularisation: CoarseDropout (Cutout)        (prevents attention collapse)
+        - Noise: GaussNoise                             (sensor noise simulation)
     """
-    # Common transformations (Resizing and Normalization)
+    # Common transformations applied to every split
     base_transforms = [
         A.Resize(height=image_size, width=image_size),
         A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
     ]
 
     if split == "train":
-        # Augmentations for training
         augmentations = [
+            # ── Geometric ──────────────────────────────────────────────────
             A.HorizontalFlip(p=0.5),
             A.VerticalFlip(p=0.5),
             A.RandomRotate90(p=0.5),
-            A.ShiftScaleRotate(shift_limit=0.0625, scale_limit=0.1, rotate_limit=45, p=0.5),
-            A.RandomBrightnessContrast(p=0.2),
-            # FIX #10: Use explicit var_limit keyword to stay compatible with
-            # albumentations >= 2.0, which changed GaussNoise's default API.
+            A.ShiftScaleRotate(
+                shift_limit=0.0625, scale_limit=0.1, rotate_limit=45, p=0.5
+            ),
+
+            # ── Color / stain robustness ───────────────────────────────────
+            # ColorJitter simulates staining batch variation common in histology.
+            A.ColorJitter(
+                brightness=0.2, contrast=0.2, saturation=0.2, hue=0.05, p=0.4
+            ),
+            # CLAHE normalises contrast — helps with over/under-stained slides.
+            A.CLAHE(clip_limit=2.0, tile_grid_size=(8, 8), p=0.3),
+
+            # ── Regularisation ─────────────────────────────────────────────
+            # CoarseDropout (Cutout) forces the Swin attention to not fixate on
+            # a single region, improving generalisation.
+            A.CoarseDropout(
+                max_holes=8,
+                max_height=image_size // 8,
+                max_width=image_size // 8,
+                min_holes=1,
+                fill_value=0,
+                p=0.3,
+            ),
+
+            # ── Noise ──────────────────────────────────────────────────────
             A.GaussNoise(var_limit=(10.0, 50.0), p=0.2),
+            A.RandomBrightnessContrast(p=0.2),
         ]
         transforms = augmentations + base_transforms
     else:
         # No augmentations for val/test — just resize and normalize.
         transforms = base_transforms
 
-    # Append ToTensorV2 to convert to PyTorch tensors
     transforms.append(ToTensorV2())
-
     return A.Compose(transforms)
 
 
