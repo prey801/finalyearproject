@@ -1,5 +1,10 @@
 import os
 import argparse
+import cv2
+
+cv2.setNumThreads(0)
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+
 import mlflow
 import numpy as np
 import torch
