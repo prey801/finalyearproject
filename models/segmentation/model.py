@@ -14,9 +14,10 @@ class SegmentationModel(BaseModel):
     Output: List of pixel masks (as numpy arrays)
     """
 
-    def __init__(self, checkpoint_path: str = "sam2_hiera_small.pt", config_path: str = "sam2_hiera_s.yaml", device='cpu'):
+    def __init__(self, checkpoint_path: str = None, config_path: str = "sam2_hiera_s.yaml", device='cpu'):
+        import os
         self.device = device
-        self.checkpoint_path = checkpoint_path
+        self.checkpoint_path = checkpoint_path or os.environ.get("SAM2_WEIGHTS_PATH", "sam2_hiera_small.pt")
         self.config_path = config_path
         self.predictor = None
         self.load_model()
