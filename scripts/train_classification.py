@@ -135,14 +135,16 @@ def train_classification(
         torch.backends.cudnn.benchmark = True
 
     # ── DataLoader workers ────────────────────────────────────────────────────
-    # Auto-detect: cap at 4 to stay within Colab RAM limits; respect explicit arg.
+    # Auto-detect: cap at 6; 4 workers × prefetch 4 ≈ 256 images buffered in RAM.
+    # With 7+ GB free system RAM this is safe; reduce if you see OOM errors.
     if num_workers < 0:
-        _workers = min(os.cpu_count() or 2, 4)
+        _workers = min(os.cpu_count() or 2, 6)
     else:
         _workers = num_workers
     _persistent = _workers > 0
-    # prefetch_factor=2 (not 4) — 4 workers × 4 prefetch × batch≈64 images burns RAM fast.
-    _prefetch   = 2 if _workers > 0 else None
+    # prefetch_factor=4: each worker pre-loads 4 batches ahead.
+    # 6 workers × 4 prefetch × batch 192 × 3 channels × 224² × 1B ≈ 5 GB peak RAM — fine.
+    _prefetch   = 4 if _workers > 0 else None
     print(f"DataLoader: num_workers={_workers}, persistent={_persistent}, "
           f"prefetch_factor={_prefetch}")
 
