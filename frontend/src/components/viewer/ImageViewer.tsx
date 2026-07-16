@@ -104,34 +104,34 @@ export function ImageViewer() {
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 bg-card/90 backdrop-blur-md border border-border p-1.5 rounded-lg shadow-md">
             <button 
               onClick={() => setActiveTool('select')}
-              className={`p-2 rounded-md transition-colors ${activeTool === 'select' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
+              className={`p-2 rounded-md transition-all active:scale-95 ${activeTool === 'select' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
               title="Select / Edit Annotations"
             >
               <MousePointer2 className="w-4 h-4" />
             </button>
             <button 
               onClick={() => setActiveTool('pan')}
-              className={`p-2 rounded-md transition-colors ${activeTool === 'pan' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
+              className={`p-2 rounded-md transition-all active:scale-95 ${activeTool === 'pan' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
               title="Pan Tool"
             >
               <Hand className="w-4 h-4" />
             </button>
             <div className="w-px h-6 bg-border mx-1"></div>
-            <button className="p-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors" title="Zoom Out">
+            <button className="p-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-all active:scale-95" title="Zoom Out">
               <ZoomOut className="w-4 h-4" />
             </button>
             <span className="text-xs font-medium text-foreground w-12 text-center" style={{ fontFeatureSettings: '"tnum"' }}>100%</span>
-            <button className="p-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors" title="Zoom In">
+            <button className="p-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-all active:scale-95" title="Zoom In">
               <ZoomIn className="w-4 h-4" />
             </button>
             <div className="w-px h-6 bg-border mx-1"></div>
-            <button className="p-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors" title="Image Adjustments (Brightness/Contrast)">
+            <button className="p-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-all active:scale-95" title="Image Adjustments (Brightness/Contrast)">
               <SlidersHorizontal className="w-4 h-4" />
             </button>
-            <button className="p-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors" title="Toggle Scale/Ruler">
+            <button className="p-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-all active:scale-95" title="Toggle Scale/Ruler">
               <Ruler className="w-4 h-4" />
             </button>
-            <button className="p-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors" title="Toggle Minimap">
+            <button className="p-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-all active:scale-95" title="Toggle Minimap">
               <Map className="w-4 h-4" />
             </button>
           </div>
@@ -159,9 +159,9 @@ export function ImageViewer() {
             <div className="flex items-center gap-2 flex-1">
               {PIPELINE_STAGES.map((stage, idx) => (
                 <div key={stage} className="flex items-center gap-2 flex-1">
-                  <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold transition-colors ${
+                  <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold transition-all duration-300 ${
                     idx < pipelineStage ? 'bg-green-500/20 text-green-500' :
-                    idx === pipelineStage ? (isAnalyzing ? 'bg-primary text-primary-foreground animate-pulse' : 'bg-primary text-primary-foreground') :
+                    idx === pipelineStage ? (isAnalyzing ? 'bg-primary text-primary-foreground shadow-[0_0_15px_rgba(0,0,0,0.3)] animate-pulse scale-110' : 'bg-primary text-primary-foreground') :
                     'bg-muted text-muted-foreground'
                   }`}>
                     {idx + 1}
@@ -184,12 +184,13 @@ export function ImageViewer() {
           onDragLeave={onDragLeave}
           onDrop={onDrop}
         >
-          <div className={`w-full max-w-xl aspect-video rounded-xl border-2 border-dashed flex flex-col items-center justify-center p-8 transition-colors ${
-            isDragging ? 'border-primary bg-primary/5' : 'border-border bg-muted/20 hover:border-primary/50'
+          <div className={`w-full max-w-xl aspect-video rounded-xl border-2 border-dashed flex flex-col items-center justify-center p-8 transition-all duration-300 ${
+            isDragging ? 'border-primary bg-primary/5 scale-[1.02]' : 'border-border bg-muted/20 hover:border-primary/50'
           }`}>
             <div className="w-20 h-20 bg-card rounded-full shadow-sm flex items-center justify-center mb-6 relative group">
               <div className="absolute inset-0 bg-primary/20 rounded-full scale-0 group-hover:scale-150 transition-transform duration-500 opacity-0 group-hover:opacity-100"></div>
-              <Microscope className="w-10 h-10 text-primary relative z-10" />
+              <div className="absolute inset-0 border-2 border-primary/30 rounded-full animate-ping opacity-20"></div>
+              <Microscope className="w-10 h-10 text-primary relative z-10 hover-lift" />
             </div>
             
             <h3 className="text-xl font-semibold text-foreground mb-2">Upload Slide for Analysis</h3>

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Activity, ImageIcon, CheckCircle, Clock, Search, Filter, MoreVertical, FileText, ChevronRight } from 'lucide-react';
+import { Activity, ImageIcon, CheckCircle, Clock, Search, Filter, MoreVertical, FileText, ChevronRight, AlertCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { CaseSummaryPanel, CaseData } from '@/components/shared/CaseSummaryPanel';
 import { getAnalysisHistory } from '@/lib/api';
@@ -17,6 +17,7 @@ export default function Home() {
   const [timeFilter, setTimeFilter] = useState('today');
   const [selectedCase, setSelectedCase] = useState<CaseData | null>(null);
   const [recentActivity, setRecentActivity] = useState<CaseData[]>(MOCK_ACTIVITY);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     getAnalysisHistory(0, 4)
@@ -31,8 +32,16 @@ export default function Home() {
             findings: item.prediction === 'malaria' ? `Abnormal (${item.parasitemia}%)` : 'Normal'
           })));
         }
+        setError(null);
       })
-      .catch(err => console.error("Failed to fetch history from backend:", err));
+      .catch(err => {
+        console.error("Failed to fetch history from backend:", err);
+        if (err.response?.status === 401) {
+           setError("Authentication required. Please log in.");
+        } else {
+           setError("Failed to connect to the backend. Please ensure the server is running.");
+        }
+      });
   }, []);
 
   return (
@@ -51,6 +60,13 @@ export default function Home() {
           New Analysis
         </Link>
       </div>
+
+      {error && (
+        <div className="bg-destructive/10 border border-destructive/20 text-destructive p-4 rounded-lg flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 shrink-0" />
+          <p className="text-sm font-medium">{error}</p>
+        </div>
+      )}
       
       {/* KPI Grid with Time Filter */}
       <div className="space-y-4">
@@ -73,8 +89,8 @@ export default function Home() {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-card border border-border p-5 rounded-lg shadow-sm flex flex-col gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in-up stagger-1">
+          <div className="bg-card border border-border p-5 rounded-lg shadow-sm flex flex-col gap-3 hover-lift">
             <div className="flex items-center gap-3 text-muted-foreground">
               <ImageIcon className="w-5 h-5 text-primary" />
               <span className="text-sm font-medium">Images Analyzed</span>
@@ -85,7 +101,7 @@ export default function Home() {
             </div>
           </div>
           
-          <div className="bg-card border border-border p-5 rounded-lg shadow-sm flex flex-col gap-3">
+          <div className="bg-card border border-border p-5 rounded-lg shadow-sm flex flex-col gap-3 hover-lift">
             <div className="flex items-center gap-3 text-muted-foreground">
               <CheckCircle className="w-5 h-5 text-destructive" />
               <span className="text-sm font-medium">Flagged Abnormalities</span>
@@ -96,7 +112,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="bg-card border border-border p-5 rounded-lg shadow-sm flex flex-col gap-3">
+          <div className="bg-card border border-border p-5 rounded-lg shadow-sm flex flex-col gap-3 hover-lift">
             <div className="flex items-center gap-3 text-muted-foreground">
               <Clock className="w-5 h-5 text-accent" />
               <span className="text-sm font-medium">Avg Processing Time</span>
@@ -110,7 +126,7 @@ export default function Home() {
       </div>
 
       {/* Recent Activity Table */}
-      <div className="space-y-4">
+      <div className="space-y-4 animate-fade-in-up stagger-2">
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-semibold tracking-tight">Recent Analyses</h2>
           <div className="flex gap-2">
@@ -143,11 +159,11 @@ export default function Home() {
             </thead>
             <tbody className="divide-y divide-border">
               {recentActivity.map((row) => (
-                <tr 
-                  key={row.id} 
-                  onClick={() => setSelectedCase(row)}
-                  className="hover:bg-muted/30 transition-colors group cursor-pointer"
-                >
+                  <tr 
+                    key={row.id} 
+                    onClick={() => setSelectedCase(row)}
+                    className="hover:bg-muted/30 transition-colors group cursor-pointer hover-lift relative"
+                  >
                   <td className="px-4 py-3 font-medium text-foreground">{row.id}</td>
                   <td className="px-4 py-3">{row.patient}</td>
                   <td className="px-4 py-3">{row.type}</td>

@@ -22,12 +22,12 @@ export function CaseSummaryPanel({ data, onClose }: CaseSummaryPanelProps) {
     <>
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 transition-opacity"
+        className="fixed inset-0 bg-background/80 z-40 fade-backdrop"
         onClick={onClose}
       />
       
       {/* Slide-over panel */}
-      <div className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-card border-l border-border shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out translate-x-0">
+      <div className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-card border-l border-border shadow-2xl flex flex-col slide-panel">
         <div className="flex items-center justify-between p-5 border-b border-border">
           <div>
             <h2 className="text-xl font-bold text-foreground tracking-tight">Case {data.id}</h2>

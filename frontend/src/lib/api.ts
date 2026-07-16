@@ -6,17 +6,36 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const apiClient = axios.create({
   baseURL: API_URL,
   timeout: 10000,
+  headers: {
+    'Bypass-Tunnel-Reminder': 'true',
+  }
 });
 
-// We can add interceptors here to append auth tokens later
+// Interceptor to attach auth token
 apiClient.interceptors.request.use((config) => {
-  // const token = localStorage.getItem('token');
-  // if (token) {
-  //   config.headers.Authorization = `Bearer ${token}`;
-  // }
+  // Use typeof window to check if we are on the client side
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
   return config;
 });
 
+// Interceptor to handle 401 Unauthorized
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 export interface AnalysisResponse {
   sample_id: string;
   patient_id: string;
