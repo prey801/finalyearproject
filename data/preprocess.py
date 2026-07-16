@@ -34,12 +34,16 @@ def get_transforms(split="train", image_size=224):
 
     if split == "train":
         augmentations = [
-            # ── Geometric ──────────────────────────────────────────────────
+            # ── Geometric ───────────────────────────────────────────────
             A.HorizontalFlip(p=0.5),
             A.VerticalFlip(p=0.5),
             A.RandomRotate90(p=0.5),
-            A.ShiftScaleRotate(
-                shift_limit=0.0625, scale_limit=0.1, rotate_limit=45, p=0.5
+            # A.Affine replaces the deprecated ShiftScaleRotate in albumentations v2.
+            A.Affine(
+                translate_percent={"x": (-0.0625, 0.0625), "y": (-0.0625, 0.0625)},
+                scale=(0.9, 1.1),
+                rotate=(-45, 45),
+                p=0.5,
             ),
 
             # ── Color / stain robustness ───────────────────────────────────
@@ -55,17 +59,19 @@ def get_transforms(split="train", image_size=224):
             # ── Regularisation ─────────────────────────────────────────────
             # CoarseDropout (Cutout) forces the Swin attention to not fixate on
             # a single region, improving generalisation.
+            # albumentations v2 API: hole count/size specified as ranges.
             A.CoarseDropout(
-                max_holes=8,
-                max_height=image_size // 8,
-                max_width=image_size // 8,
-                min_holes=1,
+                num_holes_range=(1, 8),
+                hole_height_range=(image_size // 16, image_size // 8),
+                hole_width_range=(image_size // 16, image_size // 8),
                 fill_value=0,
                 p=0.3,
             ),
 
-            # ── Noise ──────────────────────────────────────────────────────
-            A.GaussNoise(var_limit=(10.0, 50.0), p=0.2),
+            # ── Noise ───────────────────────────────────────────────────
+            # albumentations v2: var_limit removed; use std_range (normalised 0-1).
+            # Original var_limit=(10, 50) on uint8 → std=sqrt(10..50)/255 ≈ 0.01-0.03
+            A.GaussNoise(std_range=(0.01, 0.03), p=0.2),
             A.RandomBrightnessContrast(p=0.2),
         ]
         transforms = augmentations + base_transforms
