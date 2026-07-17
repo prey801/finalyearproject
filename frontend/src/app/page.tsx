@@ -72,7 +72,7 @@ export default function MarketingLandingPage() {
                     iterations={4}
                     animationDuration={2000}
                   >
-                    <span className="opacity-0">Microscopy</span>
+                    <span className="opacity-0 text-transparent" style={{ opacity: 0 }}>Microscopy</span>
                   </RoughNotation>
                 </span>
 
