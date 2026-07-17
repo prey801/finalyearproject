@@ -1,16 +1,14 @@
+import os
 import uuid
 import logging
 from PIL import Image
 
-from models.yolo.model import ObjectDetectionModel
-from models.classification.model import DiseaseClassificationModel
-from models.quality.model import QualityAssessmentModel
-from models.segmentation.model import SegmentationModel
 from backend.services.rag import RAGService
 from backend.schemas.analysis import AnalysisResponse
 
 logger = logging.getLogger(__name__)
 
+MOCK_MODELS = os.getenv("MOCK_MODELS", "False").lower() in ("true", "1", "yes")
 
 class AnalysisPipeline:
     """
@@ -28,21 +26,32 @@ class AnalysisPipeline:
 
     def __init__(self, device: str = "cpu"):
         self.device = device
+        self.rag_service = RAGService()
 
-        # Real trained models
-        self.quality_model  = QualityAssessmentModel(device=device)
-        self.yolo_model     = ObjectDetectionModel(device=device)
-        self.seg_model      = SegmentationModel(device=device)
-        self.classifier     = DiseaseClassificationModel(device=device)
-        self.rag_service    = RAGService()
+        if MOCK_MODELS:
+            logger.info("MOCK_MODELS=True. Bypassing heavy PyTorch/YOLO model loading.")
+            self.quality_model = None
+            self.yolo_model = None
+            self.seg_model = None
+            self.classifier = None
+        else:
+            from models.yolo.model import ObjectDetectionModel
+            from models.classification.model import DiseaseClassificationModel
+            from models.quality.model import QualityAssessmentModel
+            from models.segmentation.model import SegmentationModel
 
-        logger.info(
-            "AnalysisPipeline initialised | device=%s | "
-            "YOLO weights=%s | Swin weights loaded=%s",
-            device,
-            self.yolo_model.weights_path,
-            self.classifier.weights_loaded,
-        )
+            self.quality_model  = QualityAssessmentModel(device=device)
+            self.yolo_model     = ObjectDetectionModel(device=device)
+            self.seg_model      = SegmentationModel(device=device)
+            self.classifier     = DiseaseClassificationModel(device=device)
+
+            logger.info(
+                "AnalysisPipeline initialised | device=%s | "
+                "YOLO weights=%s | Swin weights loaded=%s",
+                device,
+                self.yolo_model.weights_path,
+                self.classifier.weights_loaded,
+            )
 
     def process_image(
         self,
@@ -53,6 +62,24 @@ class AnalysisPipeline:
     ) -> AnalysisResponse:
         if not sample_id:
             sample_id = f"MAL-{uuid.uuid4().hex[:6].upper()}"
+
+        if MOCK_MODELS:
+            return AnalysisResponse(
+                sample_id=sample_id,
+                patient_id=patient_id,
+                specimen_type=specimen_type,
+                quality="good",
+                prediction="malaria",
+                confidence=95.5,
+                uncertainty=2.0,
+                infected_cells=15,
+                total_cells=100,
+                parasitemia=15.0,
+                heatmap_path=f"/heatmaps/{sample_id}.png",
+                report="**MOCK REPORT**\n\nThe sample indicates malaria infection (simulated).",
+                review_required=True,
+                model_versions={"mock": "true"}
+            )
 
         # ── 1. Image Quality Check ────────────────────────────────────────────
         quality_label = self.quality_model.predict(image)
