@@ -6,20 +6,13 @@ import Link from 'next/link';
 import { CaseSummaryPanel, CaseData } from '@/components/shared/CaseSummaryPanel';
 import { getAnalysisHistory } from '@/lib/api';
 
-const MOCK_HISTORY: CaseData[] = [
-  { id: 'AN-2094', date: 'Oct 24, 2026', patient: 'P-8472', type: 'Blood Smear', status: 'Completed', findings: 'Abnormal (2 flags)' },
-  { id: 'AN-2093', date: 'Oct 24, 2026', patient: 'P-9102', type: 'Tissue Biopsy', status: 'Completed', findings: 'Normal' },
-  { id: 'AN-2092', date: 'Oct 23, 2026', patient: 'P-3321', type: 'Blood Smear', status: 'Review Required', findings: 'Inconclusive' },
-  { id: 'AN-2091', date: 'Oct 23, 2026', patient: 'P-1149', type: 'Bone Marrow', status: 'Completed', findings: 'Normal' },
-  { id: 'AN-2090', date: 'Oct 22, 2026', patient: 'P-7763', type: 'Tissue Biopsy', status: 'Completed', findings: 'Abnormal (1 flag)' },
-  { id: 'AN-2089', date: 'Oct 21, 2026', patient: 'P-8820', type: 'Blood Smear', status: 'Failed', findings: 'Low Quality' },
-];
+
 
 export default function HistoryPage() {
   const [activeFilter, setActiveFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCase, setSelectedCase] = useState<CaseData | null>(null);
-  const [history, setHistory] = useState<CaseData[]>(MOCK_HISTORY);
+  const [history, setHistory] = useState<CaseData[]>([]);
   
   useEffect(() => {
     getAnalysisHistory(0, 100)

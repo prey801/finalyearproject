@@ -6,17 +6,12 @@ import { useEffect, useState } from 'react';
 import { CaseSummaryPanel, CaseData } from '@/components/shared/CaseSummaryPanel';
 import { getAnalysisHistory } from '@/lib/api';
 
-const MOCK_ACTIVITY: CaseData[] = [
-  { id: 'AN-2094', date: '10 min ago', patient: 'P-8472', type: 'Blood Smear', status: 'Completed', findings: 'Abnormal (2 flags)' },
-  { id: 'AN-2093', date: '1 hr ago', patient: 'P-9102', type: 'Tissue Biopsy', status: 'Completed', findings: 'Normal' },
-  { id: 'AN-2092', date: '2 hrs ago', patient: 'P-3321', type: 'Blood Smear', status: 'Review Required', findings: 'Inconclusive' },
-  { id: 'AN-2091', date: '4 hrs ago', patient: 'P-1149', type: 'Bone Marrow', status: 'Completed', findings: 'Normal' },
-];
+
 
 export default function Home() {
   const [timeFilter, setTimeFilter] = useState('today');
   const [selectedCase, setSelectedCase] = useState<CaseData | null>(null);
-  const [recentActivity, setRecentActivity] = useState<CaseData[]>(MOCK_ACTIVITY);
+  const [recentActivity, setRecentActivity] = useState<CaseData[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
