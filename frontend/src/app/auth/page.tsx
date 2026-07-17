@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/lib/authContext';
-import { Activity, Lock, User, AlertCircle, Loader2, Mail } from 'lucide-react';
+import { Activity, Lock, User, AlertCircle, Loader2, Mail, Eye, EyeOff } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -11,6 +11,8 @@ export default function LandingPage() {
   const [isRightPanelActive, setIsRightPanelActive] = useState(false);
 
   // Login State
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegPassword, setShowRegPassword] = useState(false);
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -146,7 +148,10 @@ export default function LandingPage() {
               </div>
               <div className="relative group">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                <input type="password" placeholder="Password" value={regPassword} onChange={(e) => setRegPassword(e.target.value)} required className="w-full bg-background/50 border border-border px-10 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
+                <input type={showRegPassword ? "text" : "password"} placeholder="Password" value={regPassword} onChange={(e) => setRegPassword(e.target.value)} required className="w-full bg-background/50 border border-border px-10 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
+                <button type="button" onClick={() => setShowRegPassword(!showRegPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1}>
+                  {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
@@ -201,7 +206,10 @@ export default function LandingPage() {
               </div>
               <div className="relative group">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                <input type="password" placeholder="Password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required className="w-full bg-background/50 border border-border px-10 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
+                <input type={showLoginPassword ? "text" : "password"} placeholder="Password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required className="w-full bg-background/50 border border-border px-10 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
+                <button type="button" onClick={() => setShowLoginPassword(!showLoginPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1}>
+                  {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 

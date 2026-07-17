@@ -40,13 +40,25 @@ export async function updateSession(request: NextRequest) {
 
   if (
     !user &&
-    !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/auth')
+    request.nextUrl.pathname.startsWith('/dashboard')
   ) {
-    // no user, potentially respond by redirecting the user to the login page
+    // no user, redirect to auth
     const url = request.nextUrl.clone()
-    url.pathname = '/auth/login'
+    url.pathname = '/auth'
     return NextResponse.redirect(url)
+  }
+
+  // If the user is logged in, redirect them away from auth pages
+  if (user && request.nextUrl.pathname.startsWith('/auth')) {
+    // Wait, we don't want to redirect from /auth/update-password or /auth/callback
+    if (
+      !request.nextUrl.pathname.startsWith('/auth/update-password') &&
+      !request.nextUrl.pathname.startsWith('/auth/callback')
+    ) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
+    }
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is.

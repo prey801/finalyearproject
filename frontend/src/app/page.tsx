@@ -2,16 +2,34 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Microscope, Activity, BrainCircuit } from 'lucide-react';
+import { Microscope, Activity, BrainCircuit, Eraser } from 'lucide-react';
 import { RoughNotation, RoughNotationGroup } from 'react-rough-notation';
+import { motion } from 'framer-motion';
 
 export default function MarketingLandingPage() {
   const [showNotes, setShowNotes] = useState(false);
+  const [drawKey, setDrawKey] = useState(0);
+  const [isErasing, setIsErasing] = useState(false);
 
   useEffect(() => {
-    // Slight delay so the user sees the notes draw themselves
+    // Show base annotations
     const timer = setTimeout(() => setShowNotes(true), 500);
-    return () => clearTimeout(timer);
+    
+    // Loop the circle animation every 8 seconds
+    const loopTimer = setInterval(() => {
+      setIsErasing(true); // Start the eraser animation
+      
+      // After 1.5s (when the eraser is done), reset and redraw
+      setTimeout(() => {
+        setIsErasing(false);
+        setDrawKey(prev => prev + 1);
+      }, 1500);
+    }, 8000);
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(loopTimer);
+    };
   }, []);
 
   return (
@@ -42,9 +60,44 @@ export default function MarketingLandingPage() {
           <RoughNotationGroup show={showNotes}>
             <h1 className="text-5xl lg:text-7xl font-heading font-extrabold tracking-tight text-foreground leading-[1.1] max-w-3xl">
               Universal Clinical Decision Support for{' '}
-              <RoughNotation type="circle" color="#06b6d4" strokeWidth={3} padding={[10, 15]}>
+              <span className="relative inline-block">
+                
+                {/* The Drawn Circle */}
+                <span key={drawKey} className={`absolute inset-0 pointer-events-none flex items-center justify-center transition-opacity duration-1000 ${isErasing ? 'opacity-0' : 'opacity-100'}`}>
+                  <RoughNotation 
+                    show={showNotes}
+                    type="circle" 
+                    color="#06b6d4" 
+                    strokeWidth={3} 
+                    padding={[-5, 15, 5, 15]}
+                    iterations={4}
+                    animationDuration={2000}
+                  >
+                    <span className="opacity-0">Microscopy</span>
+                  </RoughNotation>
+                </span>
+
+                {/* The Eraser Animation */}
+                {isErasing && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -80, y: 0 }}
+                    animate={{ 
+                      opacity: [0, 1, 1, 1, 0],
+                      x: [-80, -40, 0, 40, 80],
+                      y: [0, -20, 20, -20, 0],
+                      rotate: [0, -15, 15, -15, 0]
+                    }}
+                    transition={{ duration: 1.5, ease: "easeInOut" }}
+                    className="absolute top-1/2 left-1/2 z-20 text-foreground pointer-events-none"
+                    style={{ marginTop: '-24px', marginLeft: '-24px' }}
+                  >
+                    <Eraser size={48} className="text-foreground fill-background" />
+                  </motion.div>
+                )}
+
+                {/* Actual visible text */}
                 <span className="relative z-10">Microscopy</span>
-              </RoughNotation>
+              </span>
               .
             </h1>
           </RoughNotationGroup>
