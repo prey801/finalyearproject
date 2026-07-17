@@ -57,7 +57,6 @@ export default function MarketingLandingPage() {
       <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden flex flex-col items-center justify-center text-center">
         <div className="max-w-4xl mx-auto px-6 relative z-10 space-y-8 flex flex-col items-center">
           
-          <RoughNotationGroup show={showNotes}>
             <h1 className="text-5xl lg:text-7xl font-heading font-extrabold tracking-tight text-foreground leading-[1.1] max-w-3xl">
               Universal Clinical Decision Support for{' '}
               <span className="relative inline-block">
@@ -100,7 +99,6 @@ export default function MarketingLandingPage() {
               </span>
               .
             </h1>
-          </RoughNotationGroup>
           
           <p className="text-xl font-sans text-foreground/80 leading-relaxed max-w-2xl mt-8">
             Unlock faster, more accurate diagnoses. MedScope AI uses state-of-the-art vision models to detect, segment, and classify anomalies across ANY microscopy-based disease pipeline.
