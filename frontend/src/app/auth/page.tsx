@@ -23,6 +23,7 @@ export default function LandingPage() {
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regError, setRegError] = useState('');
+  const [regSuccess, setRegSuccess] = useState('');
   const [isRegLoading, setIsRegLoading] = useState(false);
 
   const { login } = useAuth();
@@ -58,6 +59,7 @@ export default function LandingPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setRegError('');
+    setRegSuccess('');
     setIsRegLoading(true);
 
     try {
@@ -76,8 +78,8 @@ export default function LandingPage() {
       if (data.session) {
         login(data.session.access_token);
         router.push('/dashboard');
-      } else {
-        setRegError('Check your email to verify your account.');
+      } else if (data.user) {
+        setRegSuccess('Signup successful! Please check your email to verify your account.');
       }
     } catch (err: any) {
       setRegError(err.message || 'Registration failed. Please try again.');
@@ -140,15 +142,15 @@ export default function LandingPage() {
             <div className="w-full space-y-3">
               <div className="relative group">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                <input type="text" placeholder="Username" value={regUsername} onChange={(e) => setRegUsername(e.target.value)} required className="w-full bg-background/50 border border-border px-10 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
+                <input type="text" placeholder="Username" autoComplete="username" value={regUsername} onChange={(e) => setRegUsername(e.target.value)} required className="w-full bg-background/50 border border-border px-10 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
               </div>
               <div className="relative group">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                <input type="email" placeholder="Email" value={regEmail} onChange={(e) => setRegEmail(e.target.value)} required className="w-full bg-background/50 border border-border px-10 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
+                <input type="email" placeholder="Email" autoComplete="email" value={regEmail} onChange={(e) => setRegEmail(e.target.value)} required className="w-full bg-background/50 border border-border px-10 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
               </div>
               <div className="relative group">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                <input type={showRegPassword ? "text" : "password"} placeholder="Password" value={regPassword} onChange={(e) => setRegPassword(e.target.value)} required className="w-full bg-background/50 border border-border px-10 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
+                <input type={showRegPassword ? "text" : "password"} placeholder="Password" autoComplete="new-password" value={regPassword} onChange={(e) => setRegPassword(e.target.value)} required className="w-full bg-background/50 border border-border px-10 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
                 <button type="button" onClick={() => setShowRegPassword(!showRegPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1}>
                   {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -159,6 +161,13 @@ export default function LandingPage() {
               <div className="mt-4 flex items-center gap-2 text-destructive text-sm bg-destructive/10 p-2 rounded-lg border border-destructive/20 w-full">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span className="text-left leading-tight">{regError}</span>
+              </div>
+            )}
+
+            {regSuccess && (
+              <div className="mt-4 flex items-center gap-2 text-green-600 dark:text-green-400 text-sm bg-green-500/10 p-2 rounded-lg border border-green-500/20 w-full">
+                <Mail className="w-4 h-4 shrink-0" />
+                <span className="text-left leading-tight">{regSuccess}</span>
               </div>
             )}
 
@@ -202,11 +211,11 @@ export default function LandingPage() {
             <div className="w-full space-y-3">
               <div className="relative group">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                <input type="email" placeholder="Email" value={loginUsername} onChange={(e) => setLoginUsername(e.target.value)} required className="w-full bg-background/50 border border-border px-10 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
+                <input type="email" placeholder="Email" autoComplete="email" value={loginUsername} onChange={(e) => setLoginUsername(e.target.value)} required className="w-full bg-background/50 border border-border px-10 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
               </div>
               <div className="relative group">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                <input type={showLoginPassword ? "text" : "password"} placeholder="Password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required className="w-full bg-background/50 border border-border px-10 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
+                <input type={showLoginPassword ? "text" : "password"} placeholder="Password" autoComplete="current-password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required className="w-full bg-background/50 border border-border px-10 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
                 <button type="button" onClick={() => setShowLoginPassword(!showLoginPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1}>
                   {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
