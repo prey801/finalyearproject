@@ -109,11 +109,11 @@ export default function LandingPage() {
         Back to Home
       </Link>
 
-      <div className={`relative w-full max-w-[800px] min-h-[500px] bg-card/60 backdrop-blur-xl border border-border/50 rounded-3xl shadow-2xl overflow-hidden`}>
+      <div className={`relative w-full max-w-[800px] min-h-[550px] md:min-h-[500px] bg-card/60 backdrop-blur-xl border border-border/50 rounded-3xl shadow-2xl overflow-hidden`}>
         
         {/* Sign Up Form */}
-        <div className={`absolute top-0 h-full w-1/2 left-0 transition-all duration-700 ease-in-out z-10 ${isRightPanelActive ? 'translate-x-full opacity-100 z-50' : 'opacity-0 z-10 pointer-events-none'}`}>
-          <form onSubmit={handleRegister} className="bg-card flex items-center justify-center flex-col px-10 h-full text-center">
+        <div className={`absolute top-0 h-full w-full md:w-1/2 left-0 transition-all duration-700 ease-in-out ${isRightPanelActive ? 'md:translate-x-full opacity-100 z-50' : 'opacity-0 z-10 pointer-events-none'}`}>
+          <form onSubmit={handleRegister} className="bg-card flex items-center justify-center flex-col px-6 md:px-10 h-full text-center">
             <h1 className="text-3xl font-bold mb-4">Create Account</h1>
             <div className="flex gap-4 my-4">
               <button type="button" onClick={() => handleSocialLogin('google')} className="border border-border/50 rounded-full w-10 h-10 flex items-center justify-center transition-colors group hover:border-[#4285F4]">
@@ -174,12 +174,19 @@ export default function LandingPage() {
             <button type="submit" disabled={isRegLoading} className="mt-6 bg-primary text-primary-foreground font-semibold py-2.5 px-10 rounded-lg shadow hover:bg-primary/90 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
               {isRegLoading ? <><Loader2 className="w-4 h-4 animate-spin"/> Signing Up...</> : 'Sign Up'}
             </button>
+
+            {/* Mobile Toggle */}
+            <div className="mt-6 md:hidden">
+              <button type="button" onClick={() => setIsRightPanelActive(false)} className="text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
+                Already have an account? Sign In
+              </button>
+            </div>
           </form>
         </div>
 
         {/* Sign In Form */}
-        <div className={`absolute top-0 h-full w-1/2 left-0 transition-all duration-700 ease-in-out z-20 ${isRightPanelActive ? 'translate-x-full opacity-0 pointer-events-none' : ''}`}>
-          <form onSubmit={handleLogin} className="bg-card flex items-center justify-center flex-col px-10 h-full text-center">
+        <div className={`absolute top-0 h-full w-full md:w-1/2 left-0 transition-all duration-700 ease-in-out ${isRightPanelActive ? 'md:translate-x-full opacity-0 pointer-events-none' : 'opacity-100 z-20'}`}>
+          <form onSubmit={handleLogin} className="bg-card flex items-center justify-center flex-col px-6 md:px-10 h-full text-center">
             <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
               <Activity className="w-6 h-6 text-primary" />
             </div>
@@ -234,11 +241,18 @@ export default function LandingPage() {
             <button type="submit" disabled={isLoginLoading} className="bg-primary text-primary-foreground font-semibold py-2.5 px-10 rounded-lg shadow hover:bg-primary/90 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
               {isLoginLoading ? <><Loader2 className="w-4 h-4 animate-spin"/> Signing In...</> : 'Sign In'}
             </button>
+
+            {/* Mobile Toggle */}
+            <div className="mt-6 md:hidden">
+              <button type="button" onClick={() => setIsRightPanelActive(true)} className="text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
+                Don't have an account? Sign Up
+              </button>
+            </div>
           </form>
         </div>
 
-        {/* Toggle Container */}
-        <div className={`absolute top-0 left-1/2 w-1/2 h-full overflow-hidden transition-all duration-700 ease-in-out z-[100] ${isRightPanelActive ? '-translate-x-full rounded-r-[150px] rounded-l-none' : 'rounded-l-[150px] rounded-r-none'}`}>
+        {/* Toggle Container (Hidden on Mobile) */}
+        <div className={`hidden md:block absolute top-0 left-1/2 w-1/2 h-full overflow-hidden transition-all duration-700 ease-in-out z-[100] ${isRightPanelActive ? '-translate-x-full rounded-r-[150px] rounded-l-none' : 'rounded-l-[150px] rounded-r-none'}`}>
           <div className={`bg-primary relative -left-full h-full w-[200%] transform transition-all duration-700 ease-in-out text-primary-foreground ${isRightPanelActive ? 'translate-x-1/2' : 'translate-x-0'}`}>
             
             {/* Toggle Left */}
