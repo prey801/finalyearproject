@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Send, Bot, Sparkles, AlertCircle, Eye, Loader2 } from 'lucide-react';
 import { chatWithCopilot } from '@/lib/api';
+import { useActiveImageStore } from '@/store/activeImageStore';
 
 interface Message {
   id: string;
@@ -17,11 +18,14 @@ const QUICK_PROMPTS = [
 ];
 
 export function CopilotChat() {
+  const { analysisResult } = useActiveImageStore();
+  
   const [messages, setMessages] = useState<Message[]>([
     { id: '1', role: 'assistant', content: 'Clinical Copilot initialized. I have loaded the current slide context. How can I assist you with this analysis?' }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
 
   const handleSend = async (text: string = input) => {
     if (!text.trim() || isLoading) return;
@@ -31,7 +35,19 @@ export function CopilotChat() {
     setIsLoading(true);
     
     try {
-      const reply = await chatWithCopilot(text, "Current Slide, Whole Slide View");
+      let context = "No image currently loaded.";
+      if (analysisResult) {
+        context = `Image Context:
+- Prediction: ${analysisResult.prediction} (Confidence: ${analysisResult.confidence.toFixed(1)}%)
+- Patient ID: ${analysisResult.patient_id}
+- Specimen Type: ${analysisResult.specimen_type}
+- Parasitemia Level: ${analysisResult.parasitemia.toFixed(2)}%
+- Infected Cells: ${analysisResult.infected_cells} / ${analysisResult.total_cells}
+- Quality: ${analysisResult.quality}
+- Generated Report: ${analysisResult.report}`;
+      }
+      
+      const reply = await chatWithCopilot(text, context);
       setMessages(prev => [...prev, { 
         id: Date.now().toString(), 
         role: 'assistant', 
@@ -70,7 +86,9 @@ export function CopilotChat() {
       {/* Context Indicator */}
       <div className="bg-muted/30 border-b border-border px-3 py-2 flex items-center gap-2 text-xs text-muted-foreground shrink-0">
         <Eye className="w-3.5 h-3.5" />
-        <span>Context: <span className="font-medium text-foreground">Current Slide, Whole Slide View</span></span>
+        <span>Context: <span className="font-medium text-foreground">
+          {analysisResult ? `${analysisResult.specimen_type} (${analysisResult.prediction})` : 'Awaiting Image'}
+        </span></span>
       </div>
       
       {/* Chat History */}

@@ -1,10 +1,13 @@
 import { create } from 'zustand';
+import { AnalysisResponse } from '@/lib/api';
 
 interface ActiveImageState {
   imageUrl: string | null;
   setImageUrl: (url: string | null) => void;
   isExplainabilityMode: boolean;
   toggleExplainabilityMode: () => void;
+  analysisResult: AnalysisResponse | null;
+  setAnalysisResult: (result: AnalysisResponse | null) => void;
 }
 
 export const useActiveImageStore = create<ActiveImageState>((set) => ({
@@ -12,4 +15,6 @@ export const useActiveImageStore = create<ActiveImageState>((set) => ({
   setImageUrl: (url) => set({ imageUrl: url }),
   isExplainabilityMode: false,
   toggleExplainabilityMode: () => set((state) => ({ isExplainabilityMode: !state.isExplainabilityMode })),
+  analysisResult: null,
+  setAnalysisResult: (result) => set({ analysisResult: result }),
 }));

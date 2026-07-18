@@ -76,18 +76,27 @@ export const analyzeImage = async (file: File, patientId: string, specimenType: 
         const statusResponse = await apiClient.get<{status: string, error?: string, sample_id?: string}>(`/analyze/status/${taskId}`);
         if (statusResponse.data.status === 'completed') {
           clearInterval(pollInterval);
+          clearTimeout(pollTimeout);
           // Fetch final result
           const result = await getAnalysisById(sampleId);
           resolve(result);
         } else if (statusResponse.data.status === 'failed') {
           clearInterval(pollInterval);
+          clearTimeout(pollTimeout);
           reject(new Error(statusResponse.data.error || 'Analysis failed'));
         }
       } catch (error) {
         clearInterval(pollInterval);
+        clearTimeout(pollTimeout);
         reject(error);
       }
     }, 2000); // poll every 2 seconds
+
+    // Safety valve: give up after 5 minutes so the UI never hangs permanently
+    const pollTimeout = setTimeout(() => {
+      clearInterval(pollInterval);
+      reject(new Error('Analysis timed out after 5 minutes. The server may be overloaded.'));
+    }, 5 * 60 * 1000);
   });
 };
 

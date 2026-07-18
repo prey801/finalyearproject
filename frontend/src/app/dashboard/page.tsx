@@ -24,7 +24,7 @@ export default function Home() {
             patient: item.patient_id,
             type: item.specimen_type,
             status: item.review_required ? 'Review Required' : 'Completed',
-            findings: item.prediction === 'malaria' ? `Abnormal (${item.parasitemia}%)` : 'Normal'
+            findings: item.prediction?.toLowerCase() === 'malaria' ? `Abnormal (${item.parasitemia}%)` : 'Normal'
           })));
         }
         setError(null);
@@ -48,7 +48,7 @@ export default function Home() {
           <p className="text-muted-foreground mt-1">Overview of your recent digital microscopy analyses</p>
         </div>
         <Link 
-          href="/analyze" 
+          href="/dashboard/analyze" 
           className="bg-[#06b6d4] text-white border-2 border-foreground px-6 py-2.5 font-bold uppercase shadow-[4px_4px_0px_theme(colors.foreground)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_theme(colors.foreground)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all flex items-center gap-2"
         >
           <Activity className="w-5 h-5" />
@@ -188,7 +188,7 @@ export default function Home() {
             </tbody>
           </table>
           <div className="p-4 border-t-4 border-foreground bg-[#FDFBF7] text-center">
-            <Link href="/history" className="text-sm text-foreground hover:underline font-black uppercase tracking-widest">
+            <Link href="/dashboard/history" className="text-sm text-foreground hover:underline font-black uppercase tracking-widest">
               View all history
             </Link>
           </div>

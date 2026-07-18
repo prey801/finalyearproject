@@ -24,7 +24,7 @@ export default function HistoryPage() {
             patient: item.patient_id,
             type: item.specimen_type,
             status: item.review_required ? 'Review Required' : 'Completed',
-            findings: item.prediction === 'malaria' ? `Abnormal (${item.parasitemia}%)` : 'Normal'
+            findings: item.prediction?.toLowerCase() === 'malaria' ? `Abnormal (${item.parasitemia}%)` : 'Normal'
           })));
         }
       })
@@ -87,7 +87,7 @@ export default function HistoryPage() {
             You haven't run any digital microscopy analyses yet. Start your first case to see the history here.
           </p>
           <Link 
-            href="/analyze" 
+            href="/dashboard/analyze" 
             className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2.5 rounded-md font-medium shadow-sm transition-colors"
           >
             Start your first analysis &rarr;

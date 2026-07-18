@@ -15,77 +15,14 @@ const PIPELINE_STAGES = [
 ];
 
 export function ImageViewer() {
-  const { imageUrl, setImageUrl, isExplainabilityMode } = useActiveImageStore();
+  const { imageUrl, setImageUrl, isExplainabilityMode, setAnalysisResult } = useActiveImageStore();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [activeTool, setActiveTool] = useState<'pan' | 'select'>('select');
   const [pipelineStage, setPipelineStage] = useState(0);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  // Camera State
-  const [isCameraActive, setIsCameraActive] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-
-  // Stop camera helper
-  const stopCamera = useCallback(() => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    setIsCameraActive(false);
-  }, []);
-
-  // Start camera helper
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-      streamRef.current = stream;
-      setIsCameraActive(true);
-      // We set srcObject in a setTimeout or use a callback ref to ensure video element is rendered,
-      // but since we render it conditionally based on isCameraActive, we can use a small delay
-      // or an effect. Let's just use a short timeout.
-      setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      }, 50);
-    } catch (err) {
-      console.error("Error accessing camera:", err);
-      alert("Could not access camera. Please check permissions.");
-    }
-  };
-
-  // Capture photo
-  const capturePhoto = useCallback(() => {
-    if (!videoRef.current) return;
-    const canvas = document.createElement('canvas');
-    canvas.width = videoRef.current.videoWidth || 640;
-    canvas.height = videoRef.current.videoHeight || 480;
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.drawImage(videoRef.current, 0, 0);
-      canvas.toBlob((blob) => {
-        if (blob) {
-          const file = new File([blob], "camera-capture.jpg", { type: "image/jpeg" });
-          const syntheticEvent = {
-            preventDefault: () => {},
-            dataTransfer: { files: [file] }
-          } as unknown as React.DragEvent;
-          onDrop(syntheticEvent);
-          stopCamera();
-        }
-      }, 'image/jpeg', 0.9);
-    }
-  }, [onDrop, stopCamera]);
-
-  // Clean up camera on unmount
-  useEffect(() => {
-    return () => {
-      stopCamera();
-    };
-  }, [stopCamera]);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   // Simulated drag/drop
   const onDragOver = useCallback((e: React.DragEvent) => {
@@ -105,9 +42,11 @@ export function ImageViewer() {
     const file = e.dataTransfer.files[0];
     if (!file) return;
 
-    // Display local preview
+    // Display local preview then immediately revoke to avoid memory leak
     const localUrl = URL.createObjectURL(file);
     setImageUrl(localUrl);
+    // Revoke the blob URL after a short delay — canvas will have rendered by then
+    setTimeout(() => URL.revokeObjectURL(localUrl), 5000);
     
     setIsAnalyzing(true);
     setPipelineStage(1); // Upload / Quality Check
@@ -124,15 +63,14 @@ export function ImageViewer() {
       setPipelineStage(4); // Report
       
       console.log("Analysis Result:", result);
-      // Here we would normally store the result in a Zustand store
-      // so other components (like Copilot) can access it
+      setAnalysisResult(result);
     } catch (error) {
       console.error("Failed to analyze image:", error);
       alert("Failed to analyze image. Please ensure the backend is running.");
     } finally {
       setIsAnalyzing(false);
     }
-  }, [setImageUrl]);
+  }, [setImageUrl, setAnalysisResult]);
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -263,77 +201,59 @@ export function ImageViewer() {
           onDragLeave={onDragLeave}
           onDrop={onDrop}
         >
-          {isCameraActive ? (
-            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/95">
-              <video 
-                ref={videoRef} 
-                autoPlay 
-                playsInline 
-                className="w-full max-h-[80%] object-contain"
-              />
-              <div className="absolute bottom-8 flex gap-4">
-                <button 
-                  onClick={stopCamera} 
-                  className="bg-card/20 hover:bg-card/40 text-white border border-white/20 px-6 py-2.5 rounded-md font-medium shadow-sm transition-colors flex items-center gap-2"
-                >
-                  <X className="w-4 h-4" />
-                  Cancel
-                </button>
-                <button 
-                  onClick={capturePhoto} 
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-2.5 rounded-md font-medium shadow-sm transition-colors flex items-center gap-2"
-                >
-                  <Camera className="w-5 h-5" />
-                  Capture Photo
-                </button>
-              </div>
+          <div className={`w-full max-w-xl aspect-video rounded-xl border-2 border-dashed flex flex-col items-center justify-center p-8 transition-all duration-300 ${
+            isDragging ? 'border-primary bg-primary/5 scale-[1.02]' : 'border-border bg-muted/20 hover:border-primary/50'
+          }`}>
+            <div className="w-20 h-20 bg-card rounded-full shadow-sm flex items-center justify-center mb-6 relative group">
+              <div className="absolute inset-0 bg-primary/20 rounded-full scale-0 group-hover:scale-150 transition-transform duration-500 opacity-0 group-hover:opacity-100"></div>
+              <div className="absolute inset-0 border-2 border-primary/30 rounded-full animate-ping opacity-20"></div>
+              <Microscope className="w-10 h-10 text-primary relative z-10 hover-lift" />
             </div>
-          ) : (
-            <div className={`w-full max-w-xl aspect-video rounded-xl border-2 border-dashed flex flex-col items-center justify-center p-8 transition-all duration-300 ${
-              isDragging ? 'border-primary bg-primary/5 scale-[1.02]' : 'border-border bg-muted/20 hover:border-primary/50'
-            }`}>
-              <div className="w-20 h-20 bg-card rounded-full shadow-sm flex items-center justify-center mb-6 relative group">
-                <div className="absolute inset-0 bg-primary/20 rounded-full scale-0 group-hover:scale-150 transition-transform duration-500 opacity-0 group-hover:opacity-100"></div>
-                <div className="absolute inset-0 border-2 border-primary/30 rounded-full animate-ping opacity-20"></div>
-                <Microscope className="w-10 h-10 text-primary relative z-10 hover-lift" />
-              </div>
-              
-              <h3 className="text-xl font-semibold text-foreground mb-2">Upload Slide for Analysis</h3>
-              <p className="text-sm text-center mb-6 max-w-sm">
-                Drag and drop an image file here, or click to browse. Supported formats: .svs, .tif, .ndpi, .png, .jpg
-              </p>
-              
-              <div className="flex gap-4">
-                <button 
-                  onClick={() => fileInputRef.current?.click()}
-                  className="bg-card border border-border hover:bg-muted text-foreground px-6 py-2.5 rounded-md font-medium shadow-sm transition-colors flex items-center gap-2"
-                >
-                  <UploadCloud className="w-4 h-4" />
-                  Browse Files
-                </button>
-                <button 
-                  onClick={startCamera}
-                  className="bg-card border border-border hover:bg-muted text-foreground px-6 py-2.5 rounded-md font-medium shadow-sm transition-colors flex items-center gap-2"
-                >
-                  <Camera className="w-4 h-4" />
-                  Take Photo
-                </button>
-              </div>
-              
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                className="hidden" 
-                accept=".svs,.tif,.ndpi,.png,.jpg,image/*" 
-                onChange={handleFileChange} 
-              />
-              
-              <div className="mt-8 flex items-center gap-2 text-xs text-warning bg-warning/10 px-3 py-1.5 rounded-full">
-                <AlertTriangle className="w-3.5 h-3.5" />
-                Max file size: 2GB per slide
-              </div>
+            
+            <h3 className="text-xl font-semibold text-foreground mb-2">Upload Slide for Analysis</h3>
+            <p className="text-sm text-center mb-6 max-w-sm">
+              Drag and drop an image file here, or click to browse. Supported formats: .svs, .tif, .ndpi, .png, .jpg
+            </p>
+            
+            <div className="flex gap-4">
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="bg-card border border-border hover:bg-muted text-foreground px-6 py-2.5 rounded-md font-medium shadow-sm transition-colors flex items-center gap-2"
+              >
+                <UploadCloud className="w-4 h-4" />
+                Browse Files
+              </button>
+              <button 
+                onClick={() => cameraInputRef.current?.click()}
+                className="bg-card border border-border hover:bg-muted text-foreground px-6 py-2.5 rounded-md font-medium shadow-sm transition-colors flex items-center gap-2"
+              >
+                <Camera className="w-4 h-4" />
+                Take Photo
+              </button>
             </div>
-          )}
+            
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden" 
+              accept=".svs,.tif,.ndpi,.png,.jpg,image/*" 
+              onChange={handleFileChange} 
+            />
+            
+            <input 
+              type="file" 
+              ref={cameraInputRef} 
+              className="hidden" 
+              accept="image/*" 
+              capture="environment"
+              onChange={handleFileChange} 
+            />
+            
+            <div className="mt-8 flex items-center gap-2 text-xs text-warning bg-warning/10 px-3 py-1.5 rounded-full">
+              <AlertTriangle className="w-3.5 h-3.5" />
+              Max file size: 2GB per slide
+            </div>
+          </div>
         </div>
       )}
     </div>
