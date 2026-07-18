@@ -66,7 +66,7 @@ else:
 # --- STEP 2: Start Celery Worker ---
 print("[2/5] Starting Celery worker...")
 celery_process = subprocess.Popen(
-    ["celery", "-A", "backend.worker", "worker", "--loglevel=info"],
+    ["celery", "-A", "backend.worker", "worker", "--pool=solo", "--loglevel=info"],
     cwd=PROJECT_DIR
 )
 time.sleep(3)

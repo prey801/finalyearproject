@@ -29,6 +29,7 @@ class ObjectDetectionModel(BaseModel):
         # In a test mock context or if custom weights are found, load YOLO
         if self.is_custom or os.environ.get("TESTING") == "true":
             self.model = YOLO(self.weights_path if self.is_custom else "yolo11n.pt")
+            self.model.to(self.device)
         else:
             logging.warning(
                 f"Custom YOLO weights not found at {self.weights_path}. "

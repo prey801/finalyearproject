@@ -70,7 +70,7 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    command: celery -A backend.worker worker --loglevel=info
+    command: celery -A backend.worker worker --pool=solo --loglevel=info
     depends_on:
       - db
       - redis
