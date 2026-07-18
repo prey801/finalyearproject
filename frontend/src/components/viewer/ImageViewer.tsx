@@ -351,6 +351,7 @@ export function ImageViewer() {
               Max file size: 2GB per slide
             </div>
           </div>
+          )}
         </div>
       )}
     </div>
