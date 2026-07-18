@@ -38,15 +38,15 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims()
   const user = data?.claims
 
-  if (
-    !user &&
-    request.nextUrl.pathname.startsWith('/dashboard')
-  ) {
-    // no user, redirect to auth
-    const url = request.nextUrl.clone()
-    url.pathname = '/auth'
-    return NextResponse.redirect(url)
-  }
+  // if (
+  //   !user &&
+  //   request.nextUrl.pathname.startsWith('/dashboard')
+  // ) {
+  //   // no user, redirect to auth
+  //   const url = request.nextUrl.clone()
+  //   url.pathname = '/auth'
+  //   return NextResponse.redirect(url)
+  // }
 
   // If the user is logged in, redirect them away from auth pages
   if (user && request.nextUrl.pathname.startsWith('/auth')) {
