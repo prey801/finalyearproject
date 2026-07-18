@@ -9,8 +9,8 @@ from backend.database.session import engine, Base
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Database tables are now managed via Alembic migrations.
-    pass
+    # Ensure database tables exist if migrations weren't run
+    Base.metadata.create_all(bind=engine)
     yield
 
 # Load allowed origins from environment (default to development origins)
@@ -29,10 +29,13 @@ app = FastAPI(
 # Expose /metrics endpoint for Prometheus
 Instrumentator().instrument(app).expose(app)
 
+# Allow credentials only if we have specific origins
+allow_credentials = "*" not in ALLOWED_ORIGINS
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
+    allow_origins=ALLOWED_ORIGINS if "*" not in ALLOWED_ORIGINS else ["*"],
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
