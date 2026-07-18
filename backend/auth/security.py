@@ -2,8 +2,18 @@ import os
 from passlib.context import CryptContext
 import jwt
 
-# Replace the old DEV_SECRET with Supabase integration
-SUPABASE_JWT_SECRET = os.environ.get("SUPABASE_JWT_SECRET", "bde26b97-870b-4434-91c4-fa27bebfabc8")
+_raw_secret = os.environ.get("SUPABASE_JWT_SECRET")
+if not _raw_secret:
+    import logging
+    logging.getLogger(__name__).warning(
+        "SUPABASE_JWT_SECRET env var is not set. "
+        "Token verification will fail for real Supabase sessions. "
+        "Set it to the JWT secret from your Supabase project settings."
+    )
+    # Fallback keeps the dev bypass working (no token = test_clinician user)
+    _raw_secret = "unset-dev-secret"
+
+SUPABASE_JWT_SECRET = _raw_secret
 ALGORITHM = "HS256"
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

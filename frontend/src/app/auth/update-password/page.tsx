@@ -39,7 +39,7 @@ export default function UpdatePassword() {
       
       setStatus('success');
       setTimeout(() => {
-        router.push('/');
+        router.push('/dashboard');
       }, 2000);
     } catch (err: any) {
       setStatus('error');
@@ -66,7 +66,7 @@ export default function UpdatePassword() {
                 Successfully Updated!
               </p>
               <p className="text-sm font-bold animate-pulse text-muted-foreground uppercase tracking-widest">
-                Redirecting to dashboard...
+                Redirecting to your dashboard...
               </p>
             </div>
           </div>

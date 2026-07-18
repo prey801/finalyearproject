@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { createClient } from '@/lib/supabase/client';
 
 // Configure base URL
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -11,26 +12,25 @@ const apiClient = axios.create({
   }
 });
 
-// Interceptor to attach auth token
-apiClient.interceptors.request.use((config) => {
-  // Use typeof window to check if we are on the client side
+// Interceptor to attach auth token — reads from active Supabase session
+apiClient.interceptors.request.use(async (config) => {
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      config.headers.Authorization = `Bearer ${session.access_token}`;
     }
   }
   return config;
 });
 
-// Interceptor to handle 401 Unauthorized
+// Interceptor to handle 401 Unauthorized — redirect to /auth (not /login)
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401 && typeof window !== 'undefined') {
-      localStorage.removeItem('token');
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+      if (window.location.pathname !== '/auth') {
+        window.location.href = '/auth';
       }
     }
     return Promise.reject(error);
