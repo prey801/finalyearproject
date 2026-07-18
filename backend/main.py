@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 
-from backend.api import analyze, history, auth
+from backend.api import analyze, history, auth, chat
 from backend.database.session import engine, Base
 
 @asynccontextmanager
@@ -40,6 +40,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(analyze.router)
 app.include_router(history.router)
+app.include_router(chat.router)
 
 @app.get("/")
 def read_root():

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useActiveImageStore } from '@/store/activeImageStore';
-import { Maximize2, ZoomIn, ZoomOut, Hand, MousePointer2, SlidersHorizontal, Map, Ruler, UploadCloud, Microscope, AlertTriangle } from 'lucide-react';
+import { Maximize2, ZoomIn, ZoomOut, Hand, MousePointer2, SlidersHorizontal, Map, Ruler, UploadCloud, Microscope, AlertTriangle, Camera } from 'lucide-react';
 import { analyzeImage } from '@/lib/api';
 
 const PIPELINE_STAGES = [
@@ -20,6 +20,8 @@ export function ImageViewer() {
   const [activeTool, setActiveTool] = useState<'pan' | 'select'>('select');
   const [pipelineStage, setPipelineStage] = useState(0);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   // Simulated drag/drop
   const onDragOver = useCallback((e: React.DragEvent) => {
@@ -67,6 +69,19 @@ export function ImageViewer() {
       setIsAnalyzing(false);
     }
   }, [setImageUrl]);
+
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Reuse the drop logic for file processing
+    const syntheticEvent = {
+      preventDefault: () => {},
+      dataTransfer: { files: [file] }
+    } as unknown as React.DragEvent;
+    
+    onDrop(syntheticEvent);
+  }, [onDrop]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -198,10 +213,38 @@ export function ImageViewer() {
               Drag and drop an image file here, or click to browse. Supported formats: .svs, .tif, .ndpi, .png, .jpg
             </p>
             
-            <button className="bg-card border border-border hover:bg-muted text-foreground px-6 py-2.5 rounded-md font-medium shadow-sm transition-colors flex items-center gap-2">
-              <UploadCloud className="w-4 h-4" />
-              Browse Files
-            </button>
+            <div className="flex gap-4">
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="bg-card border border-border hover:bg-muted text-foreground px-6 py-2.5 rounded-md font-medium shadow-sm transition-colors flex items-center gap-2"
+              >
+                <UploadCloud className="w-4 h-4" />
+                Browse Files
+              </button>
+              <button 
+                onClick={() => cameraInputRef.current?.click()}
+                className="bg-card border border-border hover:bg-muted text-foreground px-6 py-2.5 rounded-md font-medium shadow-sm transition-colors flex items-center gap-2"
+              >
+                <Camera className="w-4 h-4" />
+                Take Photo
+              </button>
+            </div>
+            
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden" 
+              accept=".svs,.tif,.ndpi,.png,.jpg,image/*" 
+              onChange={handleFileChange} 
+            />
+            <input 
+              type="file" 
+              ref={cameraInputRef} 
+              className="hidden" 
+              accept="image/*" 
+              capture="environment" 
+              onChange={handleFileChange} 
+            />
             
             <div className="mt-8 flex items-center gap-2 text-xs text-warning bg-warning/10 px-3 py-1.5 rounded-full">
               <AlertTriangle className="w-3.5 h-3.5" />

@@ -102,3 +102,8 @@ export const getAnalysisById = async (sampleId: string): Promise<AnalysisRespons
   const response = await apiClient.get<AnalysisResponse>(`/history/${sampleId}`);
   return response.data;
 };
+
+export const chatWithCopilot = async (message: string, context?: string): Promise<string> => {
+  const response = await apiClient.post<{reply: string}>('/chat/', { message, context });
+  return response.data.reply;
+};

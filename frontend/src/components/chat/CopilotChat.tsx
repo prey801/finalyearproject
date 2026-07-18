@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Send, Bot, Sparkles, AlertCircle, Eye } from 'lucide-react';
+import { Send, Bot, Sparkles, AlertCircle, Eye, Loader2 } from 'lucide-react';
+import { chatWithCopilot } from '@/lib/api';
 
 interface Message {
   id: string;
@@ -20,21 +21,32 @@ export function CopilotChat() {
     { id: '1', role: 'assistant', content: 'Clinical Copilot initialized. I have loaded the current slide context. How can I assist you with this analysis?' }
   ]);
   const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSend = (text: string = input) => {
-    if (!text.trim()) return;
+  const handleSend = async (text: string = input) => {
+    if (!text.trim() || isLoading) return;
     
     setMessages(prev => [...prev, { id: Date.now().toString(), role: 'user', content: text }]);
     setInput('');
+    setIsLoading(true);
     
-    // Simulate response
-    setTimeout(() => {
+    try {
+      const reply = await chatWithCopilot(text, "Current Slide, Whole Slide View");
       setMessages(prev => [...prev, { 
-        id: (Date.now() + 1).toString(), 
+        id: Date.now().toString(), 
         role: 'assistant', 
-        content: 'Analyzing the selected region of interest. The morphology is consistent with atypical cells, presenting a high nuclear-to-cytoplasmic ratio. Confidence score is 98%.' 
+        content: reply 
       }]);
-    }, 1000);
+    } catch (error) {
+      console.error("Chat error:", error);
+      setMessages(prev => [...prev, { 
+        id: Date.now().toString(), 
+        role: 'assistant', 
+        content: "I'm sorry, I encountered an error connecting to the clinical backend. Please try again." 
+      }]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -74,6 +86,14 @@ export function CopilotChat() {
             </div>
           </div>
         ))}
+        {isLoading && (
+          <div className="flex flex-col items-start">
+            <div className="max-w-[90%] p-3 text-sm bg-transparent border border-border text-foreground rounded-r-xl rounded-tl-xl flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin text-primary" />
+              <p className="leading-relaxed text-muted-foreground">Analyzing...</p>
+            </div>
+          </div>
+        )}
         {/* Warning Disclaimer in chat */}
         <div className="flex justify-center mt-4 mb-2">
           <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground bg-muted/50 px-2 py-1 rounded">
@@ -114,10 +134,10 @@ export function CopilotChat() {
           />
           <button 
             onClick={() => handleSend(input)}
-            disabled={!input.trim()}
+            disabled={!input.trim() || isLoading}
             className="absolute right-2 bottom-2 p-1.5 bg-primary disabled:bg-primary/50 disabled:cursor-not-allowed hover:bg-primary/90 text-primary-foreground rounded-md transition"
           >
-            <Send className="w-3.5 h-3.5" />
+            {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
           </button>
         </div>
       </div>
