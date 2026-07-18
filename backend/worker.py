@@ -27,8 +27,13 @@ pipeline = None
 def process_analysis_task(self, filepath: str, patient_id: str, specimen_type: str, sample_id: str = None):
     global pipeline
     if pipeline is None:
-        logger.info("Initializing AnalysisPipeline in Celery Worker...")
-        pipeline = AnalysisPipeline()
+        try:
+            import torch
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+        except ImportError:
+            device = "cpu"
+        logger.info(f"Initializing AnalysisPipeline in Celery Worker on device={device}...")
+        pipeline = AnalysisPipeline(device=device)
 
     logger.info(f"Processing image {filepath}")
     
