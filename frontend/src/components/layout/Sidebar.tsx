@@ -21,11 +21,16 @@ export function Sidebar() {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserEmail(user.email ?? 'Unknown User');
-      } else {
-        // Fallback for Colab testing auth bypass
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) throw error;
+        if (user) {
+          setUserEmail(user.email ?? 'Unknown User');
+        } else {
+          setUserEmail('Test Clinician');
+        }
+      } catch (err) {
+        // Fallback for Colab testing auth bypass when Supabase errors out
         setUserEmail('Test Clinician');
       }
     };
