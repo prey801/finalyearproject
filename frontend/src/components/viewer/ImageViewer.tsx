@@ -24,6 +24,54 @@ export function ImageViewer() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
+  // Camera State
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  // Stop camera helper
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setIsCameraActive(false);
+  }, []);
+
+  // Start camera helper
+  const startCamera = async () => {
+    // If running on insecure context (e.g., HTTP not localhost), getUserMedia might be undefined.
+    // In that case, fallback to the native camera input.
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      console.warn("getUserMedia is not supported in this browser. Falling back to native camera input.");
+      cameraInputRef.current?.click();
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      streamRef.current = stream;
+      setIsCameraActive(true);
+      // Wait for React to render the video element, then attach the stream
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      }, 50);
+    } catch (err) {
+      console.error("Error accessing camera:", err);
+      // Fallback if permission is denied or no camera is found
+      cameraInputRef.current?.click();
+    }
+  };
+
+  // Clean up camera on unmount
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, [stopCamera]);
+
   // Simulated drag/drop
   const onDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -71,6 +119,29 @@ export function ImageViewer() {
       setIsAnalyzing(false);
     }
   }, [setImageUrl, setAnalysisResult]);
+
+  // Capture photo from video stream
+  const capturePhoto = useCallback(() => {
+    if (!videoRef.current) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = videoRef.current.videoWidth || 640;
+    canvas.height = videoRef.current.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(videoRef.current, 0, 0);
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const file = new File([blob], "camera-capture.jpg", { type: "image/jpeg" });
+          const syntheticEvent = {
+            preventDefault: () => {},
+            dataTransfer: { files: [file] }
+          } as unknown as React.DragEvent;
+          onDrop(syntheticEvent);
+          stopCamera();
+        }
+      }, 'image/jpeg', 0.9);
+    }
+  }, [onDrop, stopCamera]);
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -201,14 +272,40 @@ export function ImageViewer() {
           onDragLeave={onDragLeave}
           onDrop={onDrop}
         >
-          <div className={`w-full max-w-xl aspect-video rounded-xl border-2 border-dashed flex flex-col items-center justify-center p-8 transition-all duration-300 ${
-            isDragging ? 'border-primary bg-primary/5 scale-[1.02]' : 'border-border bg-muted/20 hover:border-primary/50'
-          }`}>
-            <div className="w-20 h-20 bg-card rounded-full shadow-sm flex items-center justify-center mb-6 relative group">
-              <div className="absolute inset-0 bg-primary/20 rounded-full scale-0 group-hover:scale-150 transition-transform duration-500 opacity-0 group-hover:opacity-100"></div>
-              <div className="absolute inset-0 border-2 border-primary/30 rounded-full animate-ping opacity-20"></div>
-              <Microscope className="w-10 h-10 text-primary relative z-10 hover-lift" />
+          {isCameraActive ? (
+            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/95">
+              <video 
+                ref={videoRef} 
+                autoPlay 
+                playsInline 
+                className="w-full max-h-[80%] object-contain"
+              />
+              <div className="absolute bottom-8 flex gap-4">
+                <button 
+                  onClick={stopCamera} 
+                  className="bg-card/20 hover:bg-card/40 text-white border border-white/20 px-6 py-2.5 rounded-md font-medium shadow-sm transition-colors flex items-center gap-2"
+                >
+                  <X className="w-4 h-4" />
+                  Cancel
+                </button>
+                <button 
+                  onClick={capturePhoto} 
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-2.5 rounded-md font-medium shadow-sm transition-colors flex items-center gap-2"
+                >
+                  <Camera className="w-5 h-5" />
+                  Capture Photo
+                </button>
+              </div>
             </div>
+          ) : (
+            <div className={`w-full max-w-xl aspect-video rounded-xl border-2 border-dashed flex flex-col items-center justify-center p-8 transition-all duration-300 ${
+              isDragging ? 'border-primary bg-primary/5 scale-[1.02]' : 'border-border bg-muted/20 hover:border-primary/50'
+            }`}>
+              <div className="w-20 h-20 bg-card rounded-full shadow-sm flex items-center justify-center mb-6 relative group">
+                <div className="absolute inset-0 bg-primary/20 rounded-full scale-0 group-hover:scale-150 transition-transform duration-500 opacity-0 group-hover:opacity-100"></div>
+                <div className="absolute inset-0 border-2 border-primary/30 rounded-full animate-ping opacity-20"></div>
+                <Microscope className="w-10 h-10 text-primary relative z-10 hover-lift" />
+              </div>
             
             <h3 className="text-xl font-semibold text-foreground mb-2">Upload Slide for Analysis</h3>
             <p className="text-sm text-center mb-6 max-w-sm">
@@ -224,7 +321,7 @@ export function ImageViewer() {
                 Browse Files
               </button>
               <button 
-                onClick={() => cameraInputRef.current?.click()}
+                onClick={startCamera}
                 className="bg-card border border-border hover:bg-muted text-foreground px-6 py-2.5 rounded-md font-medium shadow-sm transition-colors flex items-center gap-2"
               >
                 <Camera className="w-4 h-4" />
