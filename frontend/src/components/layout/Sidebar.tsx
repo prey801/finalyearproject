@@ -24,6 +24,9 @@ export function Sidebar() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUserEmail(user.email ?? 'Unknown User');
+      } else {
+        // Fallback for Colab testing auth bypass
+        setUserEmail('Test Clinician');
       }
     };
     fetchUser();
