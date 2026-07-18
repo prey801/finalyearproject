@@ -17,7 +17,8 @@ class BGEM3EmbeddingModel:
     
     def __init__(self, model_name: str = "BAAI/bge-m3", use_fp16: bool = True, device: str = "cpu"):
         self.model_name = model_name
-        self.use_fp16 = use_fp16
+        # FP16 is only safe on CUDA — silently downgrade on CPU to avoid crashes.
+        self.use_fp16 = use_fp16 and device.startswith("cuda")
         self.device = device
         self.model = None
         self.load_model()

@@ -36,6 +36,7 @@ class SegmentationModel(BaseModel):
         # Initialize SAM2 Predictor with documented weights
         try:
             sam2_model = build_sam2(self.config_path, self.checkpoint_path, device=self.device)
+            sam2_model.eval()  # Ensure inference mode — SAM2 doesn't set this automatically
             self.predictor = SAM2ImagePredictor(sam2_model)
         except Exception as e:
             print(f"Warning: Failed to load SAM2 model ({e}). Using stub implementation.")
@@ -64,10 +65,12 @@ class SegmentationModel(BaseModel):
 
         self.predictor.set_image(img_np)
         
-        masks, scores, logits = self.predictor.predict(
-            box=box_prompts,
-            multimask_output=False
-        )
+        import torch
+        with torch.no_grad():
+            masks, scores, logits = self.predictor.predict(
+                box=box_prompts,
+                multimask_output=False
+            )
         
         # masks shape is usually (N, 1, H, W). We return a list of (H, W) arrays.
         result_masks = []

@@ -7,6 +7,12 @@ from backend.database.session import SessionLocal
 from backend.database.models import PredictionRecord
 import logging
 
+try:
+    import torch
+    _torch_available = True
+except ImportError:
+    _torch_available = False
+
 logger = logging.getLogger(__name__)
 
 REDIS_URL = os.environ.get("REDIS_URL", "redis://redis:6379/0")
@@ -27,10 +33,9 @@ pipeline = None
 def process_analysis_task(self, filepath: str, patient_id: str, specimen_type: str, sample_id: str = None):
     global pipeline
     if pipeline is None:
-        try:
-            import torch
+        if _torch_available:
             device = "cuda" if torch.cuda.is_available() else "cpu"
-        except ImportError:
+        else:
             device = "cpu"
         logger.info(f"Initializing AnalysisPipeline in Celery Worker on device={device}...")
         pipeline = AnalysisPipeline(device=device)
@@ -90,4 +95,12 @@ def process_analysis_task(self, filepath: str, patient_id: str, specimen_type: s
         }
     except Exception as e:
         logger.error(f"Pipeline failure: {e}")
+        # If CUDA OOM, free VRAM and reset the pipeline so the next task
+        # can re-initialise cleanly rather than inheriting a broken state.
+        if _torch_available and torch.cuda.is_available():
+            oom_keywords = ("out of memory", "cuda", "cudnn")
+            if any(kw in str(e).lower() for kw in oom_keywords):
+                logger.warning("CUDA OOM detected — clearing cache and resetting pipeline.")
+                torch.cuda.empty_cache()
+                pipeline = None
         return {"error": str(e)}

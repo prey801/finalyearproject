@@ -5,11 +5,11 @@ from rag.embeddings.model import BGEM3EmbeddingModel
 from rag.vector_store.qdrant_client import QdrantVectorStore
 
 class RAGService:
-    def __init__(self):
+    def __init__(self, device: str = "cpu"):
         qdrant_host = os.environ.get("QDRANT_HOST", "localhost")
         qdrant_port = int(os.environ.get("QDRANT_PORT", "6333"))
-        
-        self.embedding_model = BGEM3EmbeddingModel()
+        self.device = device
+        self.embedding_model = BGEM3EmbeddingModel(device=device)
         self.qdrant_store = QdrantVectorStore(host=qdrant_host, port=qdrant_port)
         self.llm = ClinicalLLMModel()
 

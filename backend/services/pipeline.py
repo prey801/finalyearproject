@@ -26,7 +26,7 @@ class AnalysisPipeline:
 
     def __init__(self, device: str = "cpu"):
         self.device = device
-        self.rag_service = RAGService()
+        self.rag_service = RAGService(device=device)
 
         if MOCK_MODELS:
             logger.info("MOCK_MODELS=True. Bypassing heavy PyTorch/YOLO model loading.")
