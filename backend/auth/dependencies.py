@@ -7,9 +7,24 @@ from backend.database.session import get_db
 from backend.database.models import User
 from backend.schemas.auth import TokenData
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)):
+    if not credentials:
+        # Development fallback bypass
+        user = db.query(User).filter(User.username == "test_clinician").first()
+        if not user:
+            user = User(
+                username="test_clinician", 
+                email="test@example.com", 
+                hashed_password="SUPABASE_MANAGED", 
+                full_name="Test Clinician"
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+        return user
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
