@@ -14,6 +14,7 @@ export default function LandingPage() {
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [loginUsername, setLoginUsername] = useState('');
+  const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [isLoginLoading, setIsLoginLoading] = useState(false);
@@ -39,7 +40,7 @@ export default function LandingPage() {
     try {
       // Note: Supabase uses email for login by default.
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: loginUsername,
+        email: loginEmail,
         password: loginPassword,
       });
 
@@ -142,11 +143,11 @@ export default function LandingPage() {
             <div className="w-full space-y-3">
               <div className="relative group">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                <input type="text" placeholder="Username" autoComplete="username" value={regUsername} onChange={(e) => setRegUsername(e.target.value)} required className="w-full bg-background/50 border border-border px-10 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
+                <input type="text" id="reg-username" name="username" placeholder="Username" autoComplete="username" value={regUsername} onChange={(e) => setRegUsername(e.target.value)} required className="w-full bg-background/50 border border-border px-10 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
               </div>
               <div className="relative group">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                <input type="email" placeholder="Email" autoComplete="email" value={regEmail} onChange={(e) => setRegEmail(e.target.value)} required className="w-full bg-background/50 border border-border px-10 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
+                <input type="email" id="reg-email" name="email" placeholder="Email" autoComplete="email" value={regEmail} onChange={(e) => setRegEmail(e.target.value)} required className="w-full bg-background/50 border border-border px-10 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
               </div>
               <div className="relative group">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
@@ -218,7 +219,11 @@ export default function LandingPage() {
             <div className="w-full space-y-3">
               <div className="relative group">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                <input type="email" placeholder="Email" autoComplete="email" value={loginUsername} onChange={(e) => setLoginUsername(e.target.value)} required className="w-full bg-background/50 border border-border px-10 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
+                <input type="text" id="login-username" name="username" placeholder="Username" autoComplete="username" value={loginUsername} onChange={(e) => setLoginUsername(e.target.value)} className="w-full bg-background/50 border border-border px-10 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
+              </div>
+              <div className="relative group">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                <input type="email" id="login-email" name="email" placeholder="Email" autoComplete="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required className="w-full bg-background/50 border border-border px-10 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
               </div>
               <div className="relative group">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
