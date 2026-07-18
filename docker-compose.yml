@@ -55,6 +55,28 @@ services:
       - db
       - redis
       - qdrant
+    volumes:
+      - uploads_data:/app/uploads
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: always
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: celery -A backend.worker worker --loglevel=info
+    depends_on:
+      - db
+      - redis
+      - qdrant
+    volumes:
+      - uploads_data:/app/uploads
     deploy:
       resources:
         reservations:
@@ -88,3 +110,4 @@ volumes:
   postgres_data:
   qdrant_data:
   mlflow_data:
+  uploads_data:

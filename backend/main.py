@@ -9,12 +9,8 @@ from backend.database.session import engine, Base
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize the database tables on startup
-    try:
-        Base.metadata.create_all(bind=engine)
-        print("Database tables initialized successfully.")
-    except Exception as e:
-        print(f"Failed to initialize database tables: {e}. Please ensure the database is running.")
+    # Database tables are now managed via Alembic migrations.
+    pass
     yield
 
 # Load allowed origins from environment (default to development origins)

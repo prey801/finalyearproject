@@ -160,6 +160,6 @@ class AnalysisPipeline:
                 "detection":      "yolov11n_malaria",
                 "segmentation":   "sam2_hiera_s",
                 "classification": "swin_tiny_patch4_window7_224_malaria",
-                "llm":            "qwen2.5_7b",
+                "llm":            self.rag_service.llm.model_name,
             },
         )

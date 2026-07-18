@@ -31,7 +31,7 @@ Microscope Image
 [ Explainability Eng. ] (GradCAM / SHAP)  -> Visualizes model focus and features
        │
        ▼
-[ Clinical Copilot ]    (Qwen 2.5 7B)    -> Evaluates via RAG and writes draft report
+[ Clinical Copilot ]    (GPT-4o)         -> Evaluates via RAG and writes draft report
 ```
 
 ---
@@ -46,12 +46,12 @@ Microscope Image
 * **Explainability:** GradCAM, GradCAM++, SHAP, Integrated Gradients
 * **Uncertainty Quantification:** Monte Carlo (MC) Dropout
 * **Knowledge Retrieval:** BGE-M3 Embeddings + Qdrant Vector DB
-* **Clinical Assistant:** Qwen 2.5 7B Instruct (LLM)
+* **Clinical Assistant:** GPT-4o (via GitHub Models API)
 * **Backend API:** FastAPI (Python)
 * **Web Frontend:** Next.js (React, TypeScript, TailwindCSS, ShadCN UI)
 * **Databases:** PostgreSQL (Relational metadata/history), Qdrant (Vector storage)
 * **MLOps & Tracking:** MLflow, DVC (Data Version Control)
-* **Infrastructure:** Docker & Docker Compose (future scale: Kubernetes)
+* **Infrastructure:** Docker & Docker Compose, Celery, Redis (Asynchronous Task Queue)
 * **Monitoring:** Prometheus & Grafana
 
 ---
@@ -131,7 +131,7 @@ If you encounter `ImportError: libGL.so.1: cannot open shared object file` in Co
   ```
 
 ### 3. Running Infrastructure Services
-Use Docker Compose to launch PostgreSQL, Redis, Qdrant Vector Database, and MLflow in the background:
+Use Docker Compose to launch PostgreSQL, Redis, Qdrant Vector Database, Celery Worker, and MLflow in the background:
 ```bash
 # Start Docker services
 docker-compose up -d db redis qdrant mlflow
@@ -153,7 +153,7 @@ python3 -m scripts.train_yolo --data data/raw/roboflow_malaria/data.yaml --epoch
 python3 -m scripts.train_classification --data_dir data/ --epochs 20 --batch 32 --device cpu
 ```
 
-### 5. Running the Backend API Server
+### 5. Running the Backend API Server & Celery Worker
 
 Start the FastAPI application in the environment of your choice:
 
@@ -208,7 +208,7 @@ FastAPI endpoints return analysis payloads matching the following schema:
     "detection": "yolov11_v1",
     "segmentation": "sam2_v1",
     "classification": "swin_base_v1",
-    "llm": "qwen2.5_7b_v1"
+    "llm": "gpt-4o"
   }
 }
 ```

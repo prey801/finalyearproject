@@ -59,12 +59,36 @@ export const analyzeImage = async (file: File, patientId: string, specimenType: 
   formData.append('patient_id', patientId);
   formData.append('specimen_type', specimenType);
 
-  const response = await apiClient.post<AnalysisResponse>('/analyze/', formData, {
+  // Initial request to trigger Celery task
+  const initialResponse = await apiClient.post<{task_id: string, sample_id: string, status: string}>('/analyze/', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
   });
-  return response.data;
+
+  const taskId = initialResponse.data.task_id;
+  const sampleId = initialResponse.data.sample_id;
+
+  // Poll for completion
+  return new Promise((resolve, reject) => {
+    const pollInterval = setInterval(async () => {
+      try {
+        const statusResponse = await apiClient.get<{status: string, error?: string, sample_id?: string}>(`/analyze/status/${taskId}`);
+        if (statusResponse.data.status === 'completed') {
+          clearInterval(pollInterval);
+          // Fetch final result
+          const result = await getAnalysisById(sampleId);
+          resolve(result);
+        } else if (statusResponse.data.status === 'failed') {
+          clearInterval(pollInterval);
+          reject(new Error(statusResponse.data.error || 'Analysis failed'));
+        }
+      } catch (error) {
+        clearInterval(pollInterval);
+        reject(error);
+      }
+    }, 2000); // poll every 2 seconds
+  });
 };
 
 export const getAnalysisHistory = async (skip = 0, limit = 100): Promise<AnalysisResponse[]> => {
