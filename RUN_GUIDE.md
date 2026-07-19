@@ -111,12 +111,14 @@ Start the FastAPI application.
 Point the model configuration to your newly trained weights:
 ```bash
 # Set environment variables for weights paths
+export QUALITY_WEIGHTS_PATH="models/weights/efficientnet_quality.pth"
 export YOLO_WEIGHTS_PATH="runs/detect/yolo11n_malaria/weights/best.pt"
+export SWIN_WEIGHTS_PATH="runs/classification/swin_tiny_patch4_window7_224_malaria_best.pth"
 
 # Start the API server
 uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 ```
-*Note: If no custom weights are found at `YOLO_WEIGHTS_PATH` (or default `models/yolo/best.pt`), the model will run in a safe stub mode to prevent COCO classes (like pedestrians and cars) from being mapped to malaria diagnoses.*
+*Note: If no custom weights are found at `YOLO_WEIGHTS_PATH` (or default `runs/detect/yolo11n_malaria/weights/best.pt`), the model will run in a safe stub mode to prevent COCO classes (like pedestrians and cars) from being mapped to malaria diagnoses.*
 
 ### Running with Default Fallbacks (Development Mode)
 ```bash

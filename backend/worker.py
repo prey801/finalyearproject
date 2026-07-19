@@ -46,6 +46,8 @@ def process_analysis_task(self, filepath: str, patient_id: str, specimen_type: s
         image = Image.open(filepath).convert("RGB")
     except Exception as e:
         logger.error(f"Failed to open image at {filepath}: {e}")
+        if os.path.exists(filepath):
+            os.remove(filepath)
         return {"error": f"Failed to load image: {str(e)}"}
 
     try:

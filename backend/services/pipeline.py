@@ -136,6 +136,43 @@ class AnalysisPipeline:
         margin    = abs(p_malaria - p_healthy)
         uncertainty = round((1.0 - margin) * 100.0, 2)
 
+        # ── 4.5. Explainability (GradCAM) ────────────────────────────────────
+        heatmap_url = None
+        if self.classifier and self.classifier.model:
+            try:
+                from models.explainability.engine import ExplainabilityEngine
+                import numpy as np
+
+                # For timm Swin models, the final layer block is typically used
+                target_layers = [self.classifier.model.layers[-1]]
+                explainer = ExplainabilityEngine(
+                    model=self.classifier.model,
+                    target_layers=target_layers,
+                    use_cuda=self.device.startswith("cuda")
+                )
+
+                img_tensor = self.classifier.preprocess(image)
+                # original_image needs to be a float32 numpy array [0, 1]
+                original_img_np = np.array(image.convert("RGB")).astype(np.float32) / 255.0
+                target_category = 1 if prediction == "malaria" else 0
+
+                res = explainer.explain_prediction(
+                    input_tensor=img_tensor,
+                    original_image=original_img_np,
+                    target_category=target_category,
+                    save_dir="/app/heatmaps",
+                    filename_prefix=sample_id
+                )
+                if "gradcam_path" in res:
+                    # e.g., /app/heatmaps/MAL-123_gradcam.png -> /heatmaps/MAL-123_gradcam.png
+                    filename = os.path.basename(res["gradcam_path"])
+                    heatmap_url = f"/heatmaps/{filename}"
+            except Exception as e:
+                logger.warning("Explainability engine failed (non-fatal): %s", e)
+
+        if not heatmap_url:
+            heatmap_url = f"/heatmaps/{sample_id}.png"
+
         # ── 5. Clinical Report Generation (RAG + LLM) ────────────────────────
         report = self.rag_service.generate_clinical_report(
             prediction, confidence * 100.0, parasitemia
@@ -153,7 +190,7 @@ class AnalysisPipeline:
             infected_cells=infected_cells,
             total_cells=total_cells,
             parasitemia=parasitemia,
-            heatmap_path=f"/heatmaps/{sample_id}.png",  # populated by explainability engine later
+            heatmap_path=heatmap_url,
             report=report,
             review_required=True,  # always require human review — clinical safety requirement
             model_versions={

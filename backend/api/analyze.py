@@ -63,7 +63,10 @@ async def analyze_image(
         raise HTTPException(status_code=500, detail=f"Failed to queue task: {str(e)}")
 
 @router.get("/status/{task_id}")
-async def get_task_status(task_id: str):
+async def get_task_status(
+    task_id: str,
+    current_user: User = Depends(get_current_active_user)
+):
     task_result = celery_app.AsyncResult(task_id)
     if task_result.state == 'PENDING':
         return {"status": "processing"}

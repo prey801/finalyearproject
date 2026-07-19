@@ -4,6 +4,9 @@ import jwt
 
 _raw_secret = os.environ.get("SUPABASE_JWT_SECRET")
 if not _raw_secret:
+    if os.environ.get("ENV", "development") == "production":
+        raise ValueError("SECURITY VIOLATION: SUPABASE_JWT_SECRET must be set in production mode!")
+        
     import logging
     logging.getLogger(__name__).warning(
         "SUPABASE_JWT_SECRET env var is not set. "

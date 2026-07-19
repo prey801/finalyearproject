@@ -26,9 +26,31 @@ class QualityAssessmentModel(BaseModel):
 
     def load_model(self) -> None:
         import timm
-        # Load a pretrained EfficientNet-B0. 
-        # For now, we use standard ImageNet weights, adjusting the head for 5 classes.
-        self.model = timm.create_model('efficientnet_b0', pretrained=True, num_classes=len(self.classes))
+        import os
+        from pathlib import Path
+        
+        # Build the timm architecture first
+        self.model = timm.create_model('efficientnet_b0', pretrained=False, num_classes=len(self.classes))
+        
+        weights_path = Path(os.environ.get("QUALITY_WEIGHTS_PATH", "models/weights/efficientnet_quality.pth"))
+        
+        if weights_path.exists():
+            import logging
+            try:
+                state_dict = torch.load(weights_path, map_location=self.device, weights_only=True)
+                self.model.load_state_dict(state_dict)
+                logging.getLogger(__name__).info(f"QualityAssessmentModel: loaded fine-tuned weights from {weights_path}")
+            except Exception as e:
+                logging.getLogger(__name__).error(f"QualityAssessmentModel: failed to load weights from {weights_path}: {e}")
+                self.model = timm.create_model('efficientnet_b0', pretrained=True, num_classes=len(self.classes))
+        else:
+            import logging
+            logging.getLogger(__name__).warning(
+                f"QualityAssessmentModel: fine-tuned weights not found at {weights_path}. "
+                "Using ImageNet pretrained only."
+            )
+            self.model = timm.create_model('efficientnet_b0', pretrained=True, num_classes=len(self.classes))
+
         self.model.to(self.device)
         self.model.eval()
 

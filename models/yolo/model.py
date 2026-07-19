@@ -23,7 +23,7 @@ class ObjectDetectionModel(BaseModel):
     def load_model(self) -> None:
         from ultralytics import YOLO
         # Check if we are running in a test environment or custom weights exist
-        self.weights_path = os.environ.get("YOLO_WEIGHTS_PATH", "models/weights/yolov11_malaria_best.pt")
+        self.weights_path = os.environ.get("YOLO_WEIGHTS_PATH", "runs/detect/yolo11n_malaria/weights/best.pt")
         self.is_custom = os.path.exists(self.weights_path)
         
         # In a test mock context or if custom weights are found, load YOLO

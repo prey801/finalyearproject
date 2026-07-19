@@ -11,7 +11,7 @@ from models.base import BaseModel
 logger = logging.getLogger(__name__)
 
 # Canonical weight path — relative to project root.
-_DEFAULT_WEIGHTS = Path("models/weights/swin_malaria_best.pth")
+_DEFAULT_WEIGHTS = Path("runs/classification/swin_tiny_patch4_window7_224_malaria_best.pth")
 # Architecture must match training (swin_tiny was used in train_classification.py).
 _ARCHITECTURE = "swin_tiny_patch4_window7_224"
 
