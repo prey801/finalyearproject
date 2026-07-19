@@ -237,8 +237,8 @@ export default function LandingPage() {
             <Link href="/auth/forgot-password" className="text-sm text-muted-foreground hover:text-foreground mt-4 mb-2 inline-block transition-colors font-medium">Forgot Your Password?</Link>
 
             {loginError && (
-              <div className="mb-4 flex items-center gap-2 text-destructive text-sm bg-destructive/10 p-2 rounded-lg border border-destructive/20 w-full">
-                <AlertCircle className="w-4 h-4 shrink-0" />
+              <div className="mb-4 flex items-start gap-2 text-destructive text-sm bg-destructive/10 p-2 rounded-lg border border-destructive/20 w-full">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                 <span className="text-left leading-tight">{loginError}</span>
               </div>
             )}
