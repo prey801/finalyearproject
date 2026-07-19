@@ -160,7 +160,7 @@ class AnalysisPipeline:
                     input_tensor=img_tensor,
                     original_image=original_img_np,
                     target_category=target_category,
-                    save_dir="/app/heatmaps",
+                    save_dir=os.path.join(os.environ.get("PROJECT_DIR", "/app"), "heatmaps"),
                     filename_prefix=sample_id
                 )
                 if "gradcam_path" in res:
@@ -170,8 +170,7 @@ class AnalysisPipeline:
             except Exception as e:
                 logger.warning("Explainability engine failed (non-fatal): %s", e)
 
-        if not heatmap_url:
-            heatmap_url = f"/heatmaps/{sample_id}.png"
+        # If heatmap was not generated, leave it as None
 
         # ── 5. Clinical Report Generation (RAG + LLM) ────────────────────────
         report = self.rag_service.generate_clinical_report(

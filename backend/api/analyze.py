@@ -11,7 +11,7 @@ from backend.worker import process_analysis_task, celery_app
 
 router = APIRouter(prefix="/analyze", tags=["analysis"])
 
-UPLOAD_DIR = "/app/uploads"
+UPLOAD_DIR = os.path.join(os.environ.get("PROJECT_DIR", "/app"), "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @router.post("/")

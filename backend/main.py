@@ -11,7 +11,7 @@ from backend.database.session import engine, Base
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Ensure heatmaps directory exists
-    os.makedirs("/app/heatmaps", exist_ok=True)
+    os.makedirs(os.path.join(os.environ.get("PROJECT_DIR", "/app"), "heatmaps"), exist_ok=True)
     # Ensure database tables exist if migrations weren't run
     Base.metadata.create_all(bind=engine)
     yield
@@ -48,7 +48,7 @@ app.include_router(analyze.router)
 app.include_router(history.router)
 app.include_router(chat.router)
 
-app.mount("/heatmaps", StaticFiles(directory="/app/heatmaps"), name="heatmaps")
+app.mount("/heatmaps", StaticFiles(directory=os.path.join(os.environ.get("PROJECT_DIR", "/app"), "heatmaps")), name="heatmaps")
 
 @app.get("/")
 def read_root():
