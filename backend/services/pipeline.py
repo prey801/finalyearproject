@@ -93,11 +93,12 @@ class AnalysisPipeline:
         total_cells    = 0
 
         for det in detections:
-            cls = det.get("class", "")
-            if "rbc" in cls or "parasite" in cls:
+            cls = det.get("class", "").lower()
+            # Count only actual cells (not standalone parasite blobs)
+            if "rbc" in cls or "infected" in cls or "cell" in cls:
                 total_cells += 1
-            if "infected" in cls or "parasite" in cls:
-                infected_cells += 1
+                if "infected" in cls:
+                    infected_cells += 1
 
         # Fallback when YOLO runs in stub mode (no weights available)
         if total_cells == 0:

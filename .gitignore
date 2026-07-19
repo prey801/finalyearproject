@@ -51,3 +51,4 @@ Thumbs.db
 
 # AI Agents
 .agents/
+*.db

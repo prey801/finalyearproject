@@ -1,6 +1,7 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt
+import os
 from sqlalchemy.orm import Session
 from backend.auth.security import verify_supabase_token
 from backend.database.session import get_db
@@ -8,9 +9,16 @@ from backend.database.models import User
 from backend.schemas.auth import TokenData
 
 security = HTTPBearer(auto_error=False)
+ENV = os.environ.get("ENV", "development")
 
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)):
     if not credentials:
+        if ENV == "production":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Not authenticated",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
         # Development fallback bypass
         user = db.query(User).filter(User.username == "test_clinician").first()
         if not user:

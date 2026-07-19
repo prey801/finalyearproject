@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Float, Integer, Boolean, Text, JSON, DateTime
+from sqlalchemy import Column, String, Float, Integer, Boolean, Text, JSON, DateTime, ForeignKey
 from sqlalchemy.sql import func
 from .session import Base
 
@@ -16,6 +16,7 @@ class PredictionRecord(Base):
     __tablename__ = "predictions"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     sample_id = Column(String, unique=True, index=True, nullable=False)
     patient_id = Column(String, index=True, nullable=False)
     specimen_type = Column(String, nullable=False)

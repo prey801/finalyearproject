@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Dict, Any, Optional
 from enum import Enum
 
@@ -8,6 +8,7 @@ class SpecimenType(str, Enum):
     other = "Other"
 
 class AnalysisResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     sample_id: str
     patient_id: str
     specimen_type: SpecimenType

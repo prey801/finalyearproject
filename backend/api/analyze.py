@@ -29,8 +29,16 @@ async def analyze_image(
         if len(contents) > 10 * 1024 * 1024:
             raise HTTPException(status_code=413, detail="File too large. Maximum size is 10MB.")
         
+        # Magic byte check
+        magic = contents[:4]
+        if not (magic.startswith(b'\xff\xd8') or magic.startswith(b'\x89PNG') or magic.startswith(b'GIF8') or magic.startswith(b'BM') or magic.startswith(b'II*\x00') or magic.startswith(b'MM\x00*')):
+            raise HTTPException(status_code=400, detail="Invalid image file format (magic byte check failed).")
+        
         # Save to shared volume for Celery
-        file_ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
+        file_ext = file.filename.split(".")[-1].lower() if "." in file.filename else "jpg"
+        if file_ext not in {"jpg", "jpeg", "png", "tif", "tiff", "bmp", "gif"}:
+            file_ext = "jpg"
+
         sample_id = f"MAL-{uuid.uuid4().hex[:6].upper()}"
         filepath = os.path.join(UPLOAD_DIR, f"{sample_id}.{file_ext}")
         
@@ -42,7 +50,7 @@ async def analyze_image(
         
     try:
         # Trigger Celery task
-        task = process_analysis_task.delay(filepath, patient_id, specimen_type, sample_id)
+        task = process_analysis_task.delay(filepath, patient_id, specimen_type, sample_id, current_user.id)
         
         return {
             "task_id": task.id,
@@ -75,7 +83,7 @@ async def get_analysis_result(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    record = db.query(PredictionRecord).filter(PredictionRecord.sample_id == sample_id).first()
+    record = db.query(PredictionRecord).filter(PredictionRecord.sample_id == sample_id, PredictionRecord.user_id == current_user.id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Result not found or still processing")
     return record

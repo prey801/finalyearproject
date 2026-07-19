@@ -30,7 +30,7 @@ celery_app.conf.update(
 pipeline = None
 
 @celery_app.task(bind=True, name="process_analysis_task")
-def process_analysis_task(self, filepath: str, patient_id: str, specimen_type: str, sample_id: str = None):
+def process_analysis_task(self, filepath: str, patient_id: str, specimen_type: str, sample_id: str = None, user_id: int = None):
     global pipeline
     if pipeline is None:
         if _torch_available:
@@ -61,6 +61,7 @@ def process_analysis_task(self, filepath: str, patient_id: str, specimen_type: s
         db = SessionLocal()
         try:
             db_record = PredictionRecord(
+                user_id=user_id,
                 sample_id=result.sample_id,
                 patient_id=result.patient_id,
                 specimen_type=result.specimen_type,
@@ -94,6 +95,8 @@ def process_analysis_task(self, filepath: str, patient_id: str, specimen_type: s
             "status": "completed"
         }
     except Exception as e:
+        if os.path.exists(filepath):
+            os.remove(filepath)
         logger.error(f"Pipeline failure: {e}")
         # If CUDA OOM, free VRAM and reset the pipeline so the next task
         # can re-initialise cleanly rather than inheriting a broken state.

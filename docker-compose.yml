@@ -51,6 +51,13 @@ services:
       dockerfile: backend/Dockerfile
     ports:
       - "8000:8000"
+    environment:
+      - POSTGRES_USER=medscope
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=medscope_db
+      - POSTGRES_HOST=db
+      - QDRANT_HOST=qdrant
+      - REDIS_URL=redis://redis:6379/0
     depends_on:
       - db
       - redis
@@ -71,6 +78,13 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     command: celery -A backend.worker worker --pool=solo --loglevel=info
+    environment:
+      - POSTGRES_USER=medscope
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=medscope_db
+      - POSTGRES_HOST=db
+      - QDRANT_HOST=qdrant
+      - REDIS_URL=redis://redis:6379/0
     depends_on:
       - db
       - redis
