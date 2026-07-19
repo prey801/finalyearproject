@@ -14,13 +14,14 @@ export default function ForgotPassword() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStatus('loading');
     
     if (!email) {
       setStatus('error');
       setErrorMsg('Please enter a valid email address.');
       return;
     }
+
+    setStatus('loading');
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {

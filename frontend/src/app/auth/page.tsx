@@ -13,7 +13,6 @@ export default function LandingPage() {
   // Login State
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegPassword, setShowRegPassword] = useState(false);
-  const [loginUsername, setLoginUsername] = useState('');
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -90,12 +89,17 @@ export default function LandingPage() {
   };
 
   const handleSocialLogin = async (provider: 'google' | 'facebook' | 'github' | 'linkedin_oidc') => {
-    await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      setLoginError(err.message || `Failed to sign in with ${provider}.`);
+    }
   };
 
   return (
@@ -217,10 +221,6 @@ export default function LandingPage() {
             <span className="text-sm text-muted-foreground mb-4">or use your account</span>
             
             <div className="w-full space-y-3">
-              <div className="relative group">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                <input type="text" id="login-username" name="username" placeholder="Username" autoComplete="username" value={loginUsername} onChange={(e) => setLoginUsername(e.target.value)} className="w-full bg-background/50 border border-border px-10 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
-              </div>
               <div className="relative group">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                 <input type="email" id="login-email" name="email" placeholder="Email" autoComplete="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required className="w-full bg-background/50 border border-border px-10 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
