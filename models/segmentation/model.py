@@ -33,9 +33,35 @@ class SegmentationModel(BaseModel):
             print("Warning: sam2 package not found. Using stub implementation.")
             return
 
-        # Initialize SAM2 Predictor with documented weights
         try:
-            sam2_model = build_sam2(self.config_path, self.checkpoint_path, device=self.device)
+            import torch
+            ckpt_path = self.checkpoint_path
+
+            # Detect whether this is a fine-tuned checkpoint from train_sam2.py
+            # (which saves {'model': state_dict, 'epoch': ..., 'config': ...})
+            # vs the raw Meta checkpoint (flat state dict / pickle).
+            raw = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+            is_finetuned = isinstance(raw, dict) and "model" in raw and "epoch" in raw
+
+            if is_finetuned:
+                # Build model from base architecture first, then load fine-tuned weights
+                config_from_ckpt = raw.get("config", self.config_path)
+                # We still need the base checkpoint for architecture init;
+                # use base path derived from fine-tuned path (strip suffix, try base name)
+                import os
+                base_candidates = [
+                    os.path.join(os.path.dirname(ckpt_path), "sam2_hiera_small.pt"),
+                    os.path.join(os.path.dirname(ckpt_path), "sam2_hiera_large.pt"),
+                    "sam2_hiera_small.pt",
+                ]
+                base_path = next((p for p in base_candidates if os.path.exists(p)), ckpt_path)
+                sam2_model = build_sam2(config_from_ckpt, base_path, device=self.device)
+                sam2_model.load_state_dict(raw["model"], strict=False)
+                print(f"Loaded fine-tuned SAM2 checkpoint (epoch {raw['epoch']}) ✓")
+            else:
+                # Standard Meta pre-trained checkpoint
+                sam2_model = build_sam2(self.config_path, ckpt_path, device=self.device)
+
             sam2_model.eval()  # Ensure inference mode — SAM2 doesn't set this automatically
             self.predictor = SAM2ImagePredictor(sam2_model)
         except Exception as e:
