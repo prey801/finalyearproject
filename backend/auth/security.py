@@ -35,7 +35,7 @@ def verify_supabase_token(token: str):
         payload = jwt.decode(
             token,
             SUPABASE_JWT_SECRET,
-            algorithms=[ALGORITHM],
+            algorithms=["HS256"],
             options={"verify_aud": False}
         )
         return payload
