@@ -62,7 +62,10 @@ Microscope Image
 medscope-ai/
 ├── frontend/             # Next.js 15+ Web application
 ├── backend/              # FastAPI Application (API, Services, Database schemas, Auth)
-├── models/               # ML models (Quality, YOLO detection, SAM2 segmentation, Swin classification, SHAP/GradCAM explainability, Uncertainty)
+├── models/               # ML models (Quality, YOLO, SAM2, Swin, SHAP/GradCAM, Uncertainty)
+│   ├── experimental/     # Unintegrated stubs for future research (GraphSAGE, Federated Learning)
+│   ├── foundation/       # Unintegrated stubs for future research (BiomedCLIP, DINOv2)
+│   └── baselines/        # Unintegrated stubs for future research (ResNet, EfficientNet)
 ├── rag/                  # RAG pipeline (Ingestion, BGE-M3 embeddings, Qdrant vector store)
 ├── data/                 # Raw/Processed datasets & split folders (NIH Malaria, Roboflow)
 ├── mlops/                # MLOps configuration, MLflow and DVC tracking
