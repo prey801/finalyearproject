@@ -42,6 +42,21 @@ if "NGROK_AUTH_TOKEN" in globals() and NGROK_AUTH_TOKEN:
 else:
     print("⚠️  No NGROK_AUTH_TOKEN — tunnels may be rate-limited. Get a free token at https://dashboard.ngrok.com")
 
+# --- STEP 0: Cleanup & Reset Infrastructure ---
+print("\\n[0/5] Cleaning up zombie processes and resetting infrastructure...")
+subprocess.run("fuser -k 3000/tcp || true", shell=True, stderr=subprocess.DEVNULL)
+subprocess.run("fuser -k 8000/tcp || true", shell=True, stderr=subprocess.DEVNULL)
+subprocess.run("pkill -f uvicorn || true", shell=True)
+subprocess.run("pkill -f celery || true", shell=True)
+subprocess.run("pkill -f next || true", shell=True)
+subprocess.run("redis-cli flushall || true", shell=True)
+
+# --- Fetch Missing Weights (Fallback handling) ---
+print("Fetching missing weights if necessary...")
+if not os.path.exists(f"{PROJECT_DIR}/models/quality/efficientnet_quality.pth"):
+    print("   Downloading EfficientNet Quality weights from Drive...")
+    subprocess.run(["gdown", "--id", "1X_EXAMPLE_ID", "-O", f"{PROJECT_DIR}/models/quality/efficientnet_quality.pth"])
+
 # --- STEP 1: Start Backend (0.0.0.0 to ensure IPv4 binding) ---
 print("\\n[1/5] Starting FastAPI backend...")
 backend_process = subprocess.Popen(
@@ -65,9 +80,12 @@ else:
 
 # --- STEP 2: Start Celery Worker ---
 print("[2/5] Starting Celery worker...")
+celery_env = os.environ.copy()
+celery_env["PYTHONPATH"] = PROJECT_DIR
 celery_process = subprocess.Popen(
     ["celery", "-A", "backend.worker", "worker", "--pool=solo", "--loglevel=info"],
-    cwd=PROJECT_DIR
+    cwd=PROJECT_DIR,
+    env=celery_env
 )
 time.sleep(3)
 
