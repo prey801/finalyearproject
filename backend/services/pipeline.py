@@ -40,7 +40,12 @@ class AnalysisPipeline:
             from models.quality.model import QualityAssessmentModel
             from models.segmentation.model import SegmentationModel
 
-            self.quality_model  = QualityAssessmentModel(device=device)
+            try:
+                self.quality_model = QualityAssessmentModel(device=device)
+            except Exception as e:
+                logger.warning("Failed to load QualityAssessmentModel (e.g., weights missing). Disabling quality check. Error: %s", e)
+                self.quality_model = None
+                
             self.yolo_model     = ObjectDetectionModel(device=device)
             self.seg_model      = SegmentationModel(device=device)
             self.classifier     = DiseaseClassificationModel(device=device)
@@ -82,9 +87,12 @@ class AnalysisPipeline:
             )
 
         # ── 1. Image Quality Check ────────────────────────────────────────────
-        quality_label = self.quality_model.predict(image)
-        # QualityAssessmentModel returns a string: "Good", "Blurred", etc.
-        quality = "good" if quality_label.lower() == "good" else "poor"
+        if self.quality_model is not None:
+            quality_label = self.quality_model.predict(image)
+            # QualityAssessmentModel returns a string: "Good", "Blurred", etc.
+            quality = "good" if quality_label.lower() == "good" else "poor"
+        else:
+            quality = "good"
 
         # ── 2. Cell Detection (YOLOv11) ───────────────────────────────────────
         detections = self.yolo_model.predict(image)
