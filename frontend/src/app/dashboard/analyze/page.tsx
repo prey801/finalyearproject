@@ -1,72 +1,25 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { ImageViewer } from '@/components/viewer/ImageViewer';
 import { CopilotChat } from '@/components/chat/CopilotChat';
 import { AnalysisReportPanel } from '@/components/analyze/AnalysisReportPanel';
 import { useActiveImageStore } from '@/store/activeImageStore';
-import { getAnalysisById, fetchImageAsBlobUrl } from '@/lib/api';
 
+// Always a fresh "New Analysis" workspace. Reopening a past case has its
+// own dedicated route: /dashboard/analyze/[sampleId].
 export default function AnalyzePage() {
-  return (
-    <Suspense fallback={null}>
-      <AnalyzePageInner />
-    </Suspense>
-  );
-}
-
-function AnalyzePageInner() {
   const { analysisResult, setAnalysisResult, setImageUrl } = useActiveImageStore();
   const [showReport, setShowReport] = useState(false);
-  const searchParams = useSearchParams();
-  const sampleId = searchParams.get('sample');
 
-  // "New Analysis" (no ?sample= in the URL): the workspace store is global
-  // and outlives navigation, so without this a fresh visit would keep
-  // showing whatever case was last open instead of the upload/camera screen.
+  // The workspace store is global and outlives navigation, so a fresh visit
+  // here must clear whatever the last session (or the last viewed case)
+  // left behind.
   useEffect(() => {
-    if (sampleId) return;
     setAnalysisResult(null);
     setImageUrl(null);
     setShowReport(false);
-  }, [sampleId, setAnalysisResult, setImageUrl]);
-
-  // Reopening a past case from History/Dashboard: load its real result
-  // (and slide image, if one was persisted) into the workspace so the
-  // report panel and Copilot chat both have full context.
-  useEffect(() => {
-    if (!sampleId) return;
-    let blobUrl: string | null = null;
-    let cancelled = false;
-
-    getAnalysisById(sampleId)
-      .then(async (result) => {
-        if (cancelled) return;
-        setAnalysisResult(result);
-
-        if (!result.image_path) {
-          setImageUrl(null);
-          return;
-        }
-        try {
-          blobUrl = await fetchImageAsBlobUrl(result.image_path);
-          if (!cancelled) setImageUrl(blobUrl);
-        } catch (err) {
-          console.error(`Failed to load slide image for ${sampleId}:`, err);
-          if (!cancelled) setImageUrl(null);
-        }
-      })
-      .catch((err) => {
-        console.error(`Failed to load case ${sampleId}:`, err);
-        alert(`Could not load case ${sampleId}. It may have been deleted.`);
-      });
-
-    return () => {
-      cancelled = true;
-      if (blobUrl) URL.revokeObjectURL(blobUrl);
-    };
-  }, [sampleId, setAnalysisResult, setImageUrl]);
+  }, [setAnalysisResult, setImageUrl]);
 
   // Auto-open the report panel as soon as a new analysis result lands
   useEffect(() => {

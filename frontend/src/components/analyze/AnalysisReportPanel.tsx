@@ -149,7 +149,7 @@ export function AnalysisReportPanel({ result, onClose }: AnalysisReportPanelProp
                 {similarCases.map((c) => (
                   <Link
                     key={c.sample_id}
-                    href={`/dashboard/analyze?sample=${encodeURIComponent(c.sample_id)}`}
+                    href={`/dashboard/analyze/${encodeURIComponent(c.sample_id)}`}
                     className="flex items-center justify-between text-sm bg-muted/30 hover:bg-muted/60 border border-border rounded-md px-3 py-2 transition-colors"
                   >
                     <div className="min-w-0">

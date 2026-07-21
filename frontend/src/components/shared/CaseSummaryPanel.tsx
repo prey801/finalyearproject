@@ -81,7 +81,7 @@ export function CaseSummaryPanel({ data, onClose }: CaseSummaryPanelProps) {
               Slide Overview
             </h3>
             <Link
-              href={`/dashboard/analyze?sample=${encodeURIComponent(data.id)}`}
+              href={`/dashboard/analyze/${encodeURIComponent(data.id)}`}
               className="aspect-[16/9] bg-muted/30 rounded-lg border border-border flex items-center justify-center relative overflow-hidden group"
             >
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -105,7 +105,7 @@ export function CaseSummaryPanel({ data, onClose }: CaseSummaryPanelProps) {
 
         <div className="p-5 border-t border-border bg-muted/10">
           <Link
-            href={`/dashboard/analyze?sample=${encodeURIComponent(data.id)}`}
+            href={`/dashboard/analyze/${encodeURIComponent(data.id)}`}
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-2.5 rounded-md font-medium shadow-sm transition-colors flex items-center justify-center gap-2"
           >
             Open in Analyze Workspace
