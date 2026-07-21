@@ -108,12 +108,41 @@ class AnalysisPipeline:
         infected_cells = 0
         total_cells    = 0
 
+        # Class vocabulary isn't fixed — different training runs/datasets use
+        # different label schemes (e.g. healthy_rbc/infected_rbc/parasite vs.
+        # Parasitized/Uninfected vs. stage labels like ring/trophozoite/
+        # schizont/gametocyte). Classify by keyword instead of an exact class
+        # list so counting doesn't silently zero out on a scheme this code
+        # wasn't hardcoded for.
+        CELL_KEYWORDS = (
+            "rbc", "cell", "wbc", "leukocyte", "parasitized", "uninfected", "healthy",
+        )
+        NEGATIVE_KEYWORDS = ("healthy", "uninfected", "normal", "background", "wbc", "leukocyte")
+        POSITIVE_KEYWORDS = (
+            "infected", "parasit", "ring", "troph", "schizont", "gameto",
+            "malaria", "plasmodium",
+        )
+
+        # If the checkpoint's whole vocabulary has no whole-cell noun at all
+        # (e.g. pure stage labels: ring/trophozoite/schizont/gametocyte, no
+        # "rbc"/"cell" class), there's nothing to distinguish "the cell" from
+        # "the parasite in it" — every detection there IS the countable unit.
+        vocab = [str(v).lower() for v in getattr(self.yolo_model, "classes", {}).values()]
+        vocab_has_cell_class = any(any(kw in v for kw in CELL_KEYWORDS) for v in vocab)
+
         for det in detections:
             cls = det.get("class", "").lower()
-            # Count only actual cells (not standalone parasite blobs)
-            if "rbc" in cls or "infected" in cls or "cell" in cls:
+            is_negative = any(kw in cls for kw in NEGATIVE_KEYWORDS)
+            is_positive = any(kw in cls for kw in POSITIVE_KEYWORDS)
+            is_cell = any(kw in cls for kw in CELL_KEYWORDS)
+
+            # Only count whole-cell boxes toward the denominator — a standalone
+            # "parasite" blob overlaid on an already-counted infected_rbc box
+            # isn't a second cell. Skip that unless the vocabulary has no
+            # cell-level class at all, in which case every box is the unit.
+            if is_cell or not vocab_has_cell_class:
                 total_cells += 1
-                if "infected" in cls:
+                if is_positive and not is_negative:
                     infected_cells += 1
 
         if total_cells == 0:

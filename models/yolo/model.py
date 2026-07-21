@@ -15,6 +15,10 @@ class ObjectDetectionModel(BaseModel):
 
     def __init__(self, device='cpu'):
         self.device = device
+        # Fallback only — used if a loaded checkpoint has no embedded names
+        # (shouldn't happen for a real Ultralytics .pt, but keeps stub/test
+        # paths working). Real names always come from the checkpoint itself,
+        # since that's what was actually in data.yaml at training time.
         self.classes = {0: "healthy_rbc", 1: "infected_rbc", 2: "parasite"}
         self.model = None
         self.is_custom = False
@@ -25,11 +29,18 @@ class ObjectDetectionModel(BaseModel):
         # Check if we are running in a test environment or custom weights exist
         self.weights_path = os.environ.get("YOLO_WEIGHTS_PATH", "runs/detect/yolo11n_malaria/weights/best.pt")
         self.is_custom = os.path.exists(self.weights_path)
-        
+
         # In a test mock context or if custom weights are found, load YOLO
         if self.is_custom or os.environ.get("TESTING") == "true":
             self.model = YOLO(self.weights_path if self.is_custom else "yolo11n.pt")
             self.model.to(self.device)
+            # Use the class names actually embedded in the checkpoint (from
+            # the dataset's data.yaml at training time) instead of the guessed
+            # dict above — a mismatch here silently zeroed out every count,
+            # since nothing downstream would match the wrong label strings.
+            if getattr(self.model, "names", None):
+                self.classes = self.model.names
+                logging.info("YOLO class names loaded from checkpoint: %s", self.classes)
         else:
             logging.warning(
                 f"Custom YOLO weights not found at {self.weights_path}. "
