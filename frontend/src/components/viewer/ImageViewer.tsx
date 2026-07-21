@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useActiveImageStore } from '@/store/activeImageStore';
-import { Maximize2, ZoomIn, ZoomOut, Hand, MousePointer2, SlidersHorizontal, Map, Ruler, UploadCloud, Microscope, AlertTriangle, Camera } from 'lucide-react';
+import { ZoomIn, ZoomOut, Hand, MousePointer2, SlidersHorizontal, Map, Ruler, UploadCloud, Microscope, AlertTriangle, Camera } from 'lucide-react';
 import { analyzeImage } from '@/lib/api';
 import { X } from 'lucide-react';
 
@@ -20,9 +20,15 @@ function generatePatientId() {
   return `P-${Math.floor(1000 + Math.random() * 9000)}`;
 }
 
+const ZOOM_MIN = 25;
+const ZOOM_MAX = 400;
+const ZOOM_STEP = 25;
+
 export function ImageViewer() {
   const { imageUrl, setImageUrl, isExplainabilityMode, analysisResult, setAnalysisResult } = useActiveImageStore();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const minimapCanvasRef = useRef<HTMLCanvasElement>(null);
+  const loadedImgRef = useRef<HTMLImageElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [activeTool, setActiveTool] = useState<'pan' | 'select'>('select');
   const [pipelineStage, setPipelineStage] = useState(0);
@@ -32,6 +38,50 @@ export function ImageViewer() {
   const [specimenType, setSpecimenType] = useState(SPECIMEN_TYPES[0]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  // Zoom / Pan
+  const [zoom, setZoom] = useState(100);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const isPanningRef = useRef(false);
+  const lastPosRef = useRef({ x: 0, y: 0 });
+
+  // Brightness / Contrast
+  const [showAdjustments, setShowAdjustments] = useState(false);
+  const [brightness, setBrightness] = useState(100);
+  const [contrast, setContrast] = useState(100);
+
+  // Toggles
+  const [showScaleBar, setShowScaleBar] = useState(true);
+  const [showMinimap, setShowMinimap] = useState(false);
+
+  const zoomIn = useCallback(() => setZoom(z => Math.min(ZOOM_MAX, z + ZOOM_STEP)), []);
+  const zoomOut = useCallback(() => setZoom(z => Math.max(ZOOM_MIN, z - ZOOM_STEP)), []);
+
+  // Reset the viewport whenever a different slide loads
+  useEffect(() => {
+    setZoom(100);
+    setPan({ x: 0, y: 0 });
+    setBrightness(100);
+    setContrast(100);
+  }, [imageUrl]);
+
+  const onCanvasMouseDown = useCallback((e: React.MouseEvent) => {
+    if (activeTool !== 'pan') return;
+    isPanningRef.current = true;
+    lastPosRef.current = { x: e.clientX, y: e.clientY };
+  }, [activeTool]);
+
+  const onCanvasMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isPanningRef.current) return;
+    const dx = e.clientX - lastPosRef.current.x;
+    const dy = e.clientY - lastPosRef.current.y;
+    lastPosRef.current = { x: e.clientX, y: e.clientY };
+    setPan(p => ({ x: p.x + dx, y: p.y + dy }));
+  }, []);
+
+  const onCanvasMouseUp = useCallback(() => {
+    isPanningRef.current = false;
+  }, []);
 
   // Camera State
   const [isCameraActive, setIsCameraActive] = useState(false);
@@ -192,6 +242,7 @@ export function ImageViewer() {
 
     const img = new window.Image();
     img.onload = () => {
+      loadedImgRef.current = img;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = '#1e1e2f';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -233,6 +284,49 @@ export function ImageViewer() {
     };
     img.src = imageUrl;
   }, [imageUrl, isExplainabilityMode, pipelineStage]);
+
+  // Minimap: a small overview of the full slide with a rectangle showing
+  // the current zoom/pan viewport. Redraws whenever it's toggled on or the
+  // viewport changes.
+  useEffect(() => {
+    if (!showMinimap) return;
+    const canvas = minimapCanvasRef.current;
+    const img = loadedImgRef.current;
+    if (!canvas || !img) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const cw = canvas.width;
+    const ch = canvas.height;
+    ctx.clearRect(0, 0, cw, ch);
+    ctx.fillStyle = '#1e1e2f';
+    ctx.fillRect(0, 0, cw, ch);
+
+    const imgAspect = img.width / img.height;
+    const canvasAspect = cw / ch;
+    let dw: number, dh: number, ox: number, oy: number;
+    if (imgAspect > canvasAspect) {
+      dw = cw; dh = cw / imgAspect; ox = 0; oy = (ch - dh) / 2;
+    } else {
+      dh = ch; dw = ch * imgAspect; ox = (cw - dw) / 2; oy = 0;
+    }
+    ctx.drawImage(img, ox, oy, dw, dh);
+
+    // Viewport rectangle: shrinks with zoom, shifts with pan (approximate —
+    // pan is normalized against a generous max-pan range for the overview).
+    const vw = dw * (100 / zoom);
+    const vh = dh * (100 / zoom);
+    const maxPanX = Math.max(0, (dw - vw) / 2);
+    const maxPanY = Math.max(0, (dh - vh) / 2);
+    const normX = Math.max(-1, Math.min(1, pan.x / 300));
+    const normY = Math.max(-1, Math.min(1, pan.y / 300));
+    const vx = ox + dw / 2 - vw / 2 - normX * maxPanX;
+    const vy = oy + dh / 2 - vh / 2 - normY * maxPanY;
+
+    ctx.strokeStyle = '#06b6d4';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(vx, vy, Math.min(vw, dw), Math.min(vh, dh));
+  }, [showMinimap, zoom, pan]);
 
   return (
     <div className="flex flex-col h-full bg-card rounded-xl overflow-hidden border border-border shadow-sm relative">
@@ -296,40 +390,109 @@ export function ImageViewer() {
               <Hand className="w-4 h-4" />
             </button>
             <div className="w-px h-6 bg-border mx-1"></div>
-            <button className="p-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-all active:scale-95" title="Zoom Out">
+            <button
+              onClick={zoomOut}
+              disabled={zoom <= ZOOM_MIN}
+              className="p-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-all active:scale-95 disabled:opacity-30 disabled:pointer-events-none"
+              title="Zoom Out"
+            >
               <ZoomOut className="w-4 h-4" />
             </button>
-            <span className="text-xs font-medium text-foreground w-12 text-center" style={{ fontFeatureSettings: '"tnum"' }}>100%</span>
-            <button className="p-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-all active:scale-95" title="Zoom In">
+            <span className="text-xs font-medium text-foreground w-12 text-center" style={{ fontFeatureSettings: '"tnum"' }}>{zoom}%</span>
+            <button
+              onClick={zoomIn}
+              disabled={zoom >= ZOOM_MAX}
+              className="p-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-all active:scale-95 disabled:opacity-30 disabled:pointer-events-none"
+              title="Zoom In"
+            >
               <ZoomIn className="w-4 h-4" />
             </button>
             <div className="w-px h-6 bg-border mx-1"></div>
-            <button className="p-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-all active:scale-95" title="Image Adjustments (Brightness/Contrast)">
-              <SlidersHorizontal className="w-4 h-4" />
-            </button>
-            <button className="p-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-all active:scale-95" title="Toggle Scale/Ruler">
+            <div className="relative">
+              <button
+                onClick={() => setShowAdjustments(v => !v)}
+                className={`p-2 rounded-md transition-all active:scale-95 ${showAdjustments ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
+                title="Image Adjustments (Brightness/Contrast)"
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+              </button>
+              {showAdjustments && (
+                <div className="absolute top-full mt-2 right-0 z-20 w-48 bg-card border border-border rounded-lg shadow-md p-3 space-y-3">
+                  <div>
+                    <div className="flex justify-between text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                      <span>Brightness</span><span>{brightness}%</span>
+                    </div>
+                    <input type="range" min={50} max={200} value={brightness}
+                      onChange={(e) => setBrightness(Number(e.target.value))}
+                      className="w-full accent-primary" />
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                      <span>Contrast</span><span>{contrast}%</span>
+                    </div>
+                    <input type="range" min={50} max={200} value={contrast}
+                      onChange={(e) => setContrast(Number(e.target.value))}
+                      className="w-full accent-primary" />
+                  </div>
+                  <button
+                    onClick={() => { setBrightness(100); setContrast(100); }}
+                    className="text-[10px] text-muted-foreground hover:text-foreground underline"
+                  >
+                    Reset
+                  </button>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => setShowScaleBar(v => !v)}
+              className={`p-2 rounded-md transition-all active:scale-95 ${showScaleBar ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
+              title="Toggle Scale/Ruler"
+            >
               <Ruler className="w-4 h-4" />
             </button>
-            <button className="p-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-all active:scale-95" title="Toggle Minimap">
+            <button
+              onClick={() => setShowMinimap(v => !v)}
+              className={`p-2 rounded-md transition-all active:scale-95 ${showMinimap ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
+              title="Toggle Minimap"
+            >
               <Map className="w-4 h-4" />
             </button>
           </div>
 
           {/* Scale Bar Overlay */}
-          <div className="absolute bottom-16 right-4 z-10 bg-black/50 backdrop-blur-sm px-3 py-1 rounded text-[10px] text-white font-mono border border-white/20 flex flex-col items-center">
-            <div className="w-24 h-px bg-white mb-1 relative">
-              <div className="absolute left-0 top-0 w-px h-1.5 -translate-y-1/2 bg-white"></div>
-              <div className="absolute right-0 top-0 w-px h-1.5 -translate-y-1/2 bg-white"></div>
+          {showScaleBar && (
+            <div className="absolute bottom-16 right-4 z-10 bg-black/50 backdrop-blur-sm px-3 py-1 rounded text-[10px] text-white font-mono border border-white/20 flex flex-col items-center">
+              <div className="w-24 h-px bg-white mb-1 relative">
+                <div className="absolute left-0 top-0 w-px h-1.5 -translate-y-1/2 bg-white"></div>
+                <div className="absolute right-0 top-0 w-px h-1.5 -translate-y-1/2 bg-white"></div>
+              </div>
+              {Math.round(10000 / zoom)} µm
             </div>
-            100 µm
-          </div>
+          )}
 
-          <div className={`relative w-full h-full flex items-center justify-center overflow-hidden ${activeTool === 'pan' ? 'cursor-grab' : 'cursor-crosshair'}`}>
+          {/* Minimap */}
+          {showMinimap && (
+            <div className="absolute bottom-16 left-4 z-10 bg-black/50 backdrop-blur-sm p-1 rounded border border-white/20">
+              <canvas ref={minimapCanvasRef} width={128} height={96} className="rounded-sm" />
+            </div>
+          )}
+
+          <div
+            className={`relative w-full h-full flex items-center justify-center overflow-hidden ${activeTool === 'pan' ? 'cursor-grab active:cursor-grabbing' : 'cursor-crosshair'}`}
+            onMouseDown={onCanvasMouseDown}
+            onMouseMove={onCanvasMouseMove}
+            onMouseUp={onCanvasMouseUp}
+            onMouseLeave={onCanvasMouseUp}
+          >
             <canvas
               ref={canvasRef}
               className="w-full h-full object-contain"
               width={1600}
               height={1200}
+              style={{
+                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom / 100})`,
+                filter: `brightness(${brightness}%) contrast(${contrast}%)`,
+              }}
             />
           </div>
 
