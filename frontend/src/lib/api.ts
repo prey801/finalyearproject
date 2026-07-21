@@ -8,7 +8,9 @@ const apiClient = axios.create({
   baseURL: API_URL,
   timeout: 10000,
   headers: {
-    'Bypass-Tunnel-Reminder': 'true',
+    // Skip ngrok's browser-warning interstitial (returned as HTML on the
+    // free plan for any request without this header — breaks JSON parsing).
+    'ngrok-skip-browser-warning': 'true',
   }
 });
 
