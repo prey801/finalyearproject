@@ -114,7 +114,8 @@ export function ImageViewer() {
       setAnalysisResult(result);
     } catch (error) {
       console.error("Failed to analyze image:", error);
-      alert("Failed to analyze image. Please ensure the backend is running.");
+      const message = error instanceof Error ? error.message : "Please ensure the backend is running.";
+      alert(`Failed to analyze image: ${message}`);
     } finally {
       setIsAnalyzing(false);
     }
@@ -162,26 +163,48 @@ export function ImageViewer() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Draw dummy cell background
-    ctx.fillStyle = '#1e1e2f';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // Only draw annotations if we are past detection phase
-    if (pipelineStage >= 3) {
-      // Draw simulated bounding box
-      ctx.strokeStyle = '#ef4444'; // destructive
-      ctx.lineWidth = 2;
-      ctx.strokeRect(100, 100, 150, 150);
-      
-      // Draw label
-      ctx.fillStyle = '#ef4444';
-      ctx.fillRect(100, 80, 150, 20);
-      ctx.fillStyle = '#fff';
-      ctx.font = '12px sans-serif';
-      ctx.fillText('Abnormal Blast - 98%', 105, 94);
-    }
+    const img = new window.Image();
+    img.onload = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#1e1e2f';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Fit the slide image to the canvas, preserving aspect ratio (letterbox)
+      const canvasAspect = canvas.width / canvas.height;
+      const imgAspect = img.width / img.height;
+      let drawWidth: number, drawHeight: number, offsetX: number, offsetY: number;
+      if (imgAspect > canvasAspect) {
+        drawWidth = canvas.width;
+        drawHeight = canvas.width / imgAspect;
+        offsetX = 0;
+        offsetY = (canvas.height - drawHeight) / 2;
+      } else {
+        drawHeight = canvas.height;
+        drawWidth = canvas.height * imgAspect;
+        offsetX = (canvas.width - drawWidth) / 2;
+        offsetY = 0;
+      }
+      ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+
+      // Only draw annotations if we are past detection phase
+      if (pipelineStage >= 3) {
+        // Draw simulated bounding box
+        ctx.strokeStyle = '#ef4444'; // destructive
+        ctx.lineWidth = 2;
+        ctx.strokeRect(100, 100, 150, 150);
+
+        // Draw label
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(100, 80, 150, 20);
+        ctx.fillStyle = '#fff';
+        ctx.font = '12px sans-serif';
+        ctx.fillText('Abnormal Blast - 98%', 105, 94);
+      }
+    };
+    img.onerror = () => {
+      console.error('Failed to load slide image for preview:', imageUrl);
+    };
+    img.src = imageUrl;
   }, [imageUrl, isExplainabilityMode, pipelineStage]);
 
   return (
