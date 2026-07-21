@@ -24,7 +24,14 @@ async def chat_with_copilot(
 ):
     try:
         if request.context:
-            prompt = f"Context:\n{request.context}\n\nUser: {request.message}\nCopilot:"
+            prompt = (
+                "You are a Clinical Copilot answering questions about a specific "
+                "microscopy case. Ground every answer in the case context below — "
+                "e.g. if asked to \"explain the classification,\" explain THIS "
+                "case's actual prediction and what likely drove it, not a generic "
+                "textbook definition of classification.\n\n"
+                f"Context:\n{request.context}\n\nUser: {request.message}\nCopilot:"
+            )
         else:
             prompt = f"User: {request.message}\nCopilot:"
             

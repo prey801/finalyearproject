@@ -1,12 +1,24 @@
 'use client';
 
 import { X, FileText, AlertTriangle, CheckCircle2, Microscope } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { AnalysisResponse } from '@/lib/api';
 
 interface AnalysisReportPanelProps {
   result: AnalysisResponse;
   onClose: () => void;
 }
+
+const markdownComponents = {
+  p: (props: React.ComponentPropsWithoutRef<'p'>) => <p className="leading-relaxed mb-2 last:mb-0" {...props} />,
+  strong: (props: React.ComponentPropsWithoutRef<'strong'>) => <strong className="font-bold text-foreground" {...props} />,
+  ul: (props: React.ComponentPropsWithoutRef<'ul'>) => <ul className="list-disc pl-4 mb-2 space-y-0.5" {...props} />,
+  ol: (props: React.ComponentPropsWithoutRef<'ol'>) => <ol className="list-decimal pl-4 mb-2 space-y-0.5" {...props} />,
+  li: (props: React.ComponentPropsWithoutRef<'li'>) => <li className="leading-relaxed" {...props} />,
+  h1: (props: React.ComponentPropsWithoutRef<'h1'>) => <h1 className="font-bold text-base mt-3 mb-1 first:mt-0" {...props} />,
+  h2: (props: React.ComponentPropsWithoutRef<'h2'>) => <h2 className="font-bold text-sm mt-3 mb-1 first:mt-0" {...props} />,
+  h3: (props: React.ComponentPropsWithoutRef<'h3'>) => <h3 className="font-bold text-sm mt-3 mb-1 first:mt-0" {...props} />,
+};
 
 export function AnalysisReportPanel({ result, onClose }: AnalysisReportPanelProps) {
   const isAbnormal = result.prediction?.toLowerCase() === 'malaria';
@@ -93,8 +105,8 @@ export function AnalysisReportPanel({ result, onClose }: AnalysisReportPanelProp
               <FileText className="w-4 h-4 text-muted-foreground" />
               Clinical Copilot Report
             </h3>
-            <div className="bg-muted/30 rounded-lg p-3.5 border border-border text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
-              {result.report}
+            <div className="bg-muted/30 rounded-lg p-3.5 border border-border text-sm text-foreground/80">
+              <ReactMarkdown components={markdownComponents}>{result.report}</ReactMarkdown>
             </div>
           </div>
 

@@ -14,13 +14,22 @@ const PIPELINE_STAGES = [
   'Report Ready'
 ];
 
+const SPECIMEN_TYPES = ['Blood Smear', 'Tissue Section', 'Other'];
+
+function generatePatientId() {
+  return `P-${Math.floor(1000 + Math.random() * 9000)}`;
+}
+
 export function ImageViewer() {
-  const { imageUrl, setImageUrl, isExplainabilityMode, setAnalysisResult } = useActiveImageStore();
+  const { imageUrl, setImageUrl, isExplainabilityMode, analysisResult, setAnalysisResult } = useActiveImageStore();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [activeTool, setActiveTool] = useState<'pan' | 'select'>('select');
   const [pipelineStage, setPipelineStage] = useState(0);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [patientId, setPatientId] = useState(generatePatientId);
+  const [specimenType, setSpecimenType] = useState(SPECIMEN_TYPES[0]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -90,26 +99,30 @@ export function ImageViewer() {
     const file = e.dataTransfer.files[0];
     if (!file) return;
 
+    // Clear any previous case's result so the header/report don't show stale
+    // data while this new slide is loading and being analyzed.
+    setAnalysisResult(null);
+    setFileName(file.name);
+
     // Display local preview then immediately revoke to avoid memory leak
     const localUrl = URL.createObjectURL(file);
     setImageUrl(localUrl);
     // Revoke the blob URL after a short delay — canvas will have rendered by then
     setTimeout(() => URL.revokeObjectURL(localUrl), 5000);
-    
+
     setIsAnalyzing(true);
     setPipelineStage(1); // Upload / Quality Check
-    
+
     try {
-      // Hardcoded patient for demo purposes (would normally be selected via UI)
-      const result = await analyzeImage(file, "P-8472", "Blood Smear");
-      
+      const result = await analyzeImage(file, patientId, specimenType);
+
       // Simulate stepping through stages for visual feedback since backend is fast
       setPipelineStage(2); // YOLO
       await new Promise(r => setTimeout(r, 800));
       setPipelineStage(3); // Swin
       await new Promise(r => setTimeout(r, 800));
       setPipelineStage(4); // Report
-      
+
       console.log("Analysis Result:", result);
       setAnalysisResult(result);
     } catch (error) {
@@ -119,7 +132,7 @@ export function ImageViewer() {
     } finally {
       setIsAnalyzing(false);
     }
-  }, [setImageUrl, setAnalysisResult]);
+  }, [setImageUrl, setAnalysisResult, patientId, specimenType]);
 
   // Capture photo from video stream
   const capturePhoto = useCallback(() => {
@@ -211,6 +224,44 @@ export function ImageViewer() {
     <div className="flex flex-col h-full bg-card rounded-xl overflow-hidden border border-border shadow-sm relative">
       {imageUrl ? (
         <>
+          {/* Slide Identity Bar — always visible so it's unambiguous which
+              slide/patient is currently loaded, whether just uploaded,
+              still analyzing, or showing a completed result. */}
+          <div className="shrink-0 border-b border-border bg-card px-4 py-2 flex items-center justify-between text-sm z-10 relative">
+            <div className="flex items-center gap-3 min-w-0">
+              <Microscope className="w-4 h-4 text-primary shrink-0" />
+              <span className="font-semibold text-foreground truncate">
+                {analysisResult ? analysisResult.sample_id : (fileName || 'Untitled slide')}
+              </span>
+              <span className="text-muted-foreground">·</span>
+              <span className="text-muted-foreground truncate">
+                Patient {analysisResult ? analysisResult.patient_id : patientId}
+              </span>
+              <span className="text-muted-foreground">·</span>
+              <span className="text-muted-foreground truncate">
+                {analysisResult ? analysisResult.specimen_type : specimenType}
+              </span>
+            </div>
+            {analysisResult && (
+              <span className={`shrink-0 text-xs font-bold uppercase px-2 py-0.5 rounded-full ${
+                analysisResult.prediction?.toLowerCase() === 'malaria'
+                  ? 'bg-destructive/10 text-destructive'
+                  : 'bg-green-500/10 text-green-600'
+              }`}>
+                {analysisResult.prediction}
+              </span>
+            )}
+            {isAnalyzing && !analysisResult && (
+              <span className="shrink-0 text-xs font-bold uppercase text-primary animate-pulse">
+                Analyzing…
+              </span>
+            )}
+          </div>
+
+          {/* Image viewport — wraps toolbar/scale-bar/canvas/stepper so their
+              `absolute` positioning is scoped here, below the identity bar,
+              instead of the whole panel. */}
+          <div className="relative flex-1 overflow-hidden">
           {/* Clinical Viewer Toolbar */}
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 bg-card/90 backdrop-blur-md border border-border p-1.5 rounded-lg shadow-md">
             <button 
@@ -287,6 +338,7 @@ export function ImageViewer() {
               ))}
             </div>
           </div>
+          </div>
         </>
       ) : (
         <div 
@@ -334,7 +386,31 @@ export function ImageViewer() {
             <p className="text-sm text-center mb-6 max-w-sm">
               Drag and drop an image file here, or click to browse. Supported formats: .svs, .tif, .ndpi, .png, .jpg
             </p>
-            
+
+            <div className="flex gap-3 mb-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+              <div className="flex-1">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Patient ID</label>
+                <input
+                  type="text"
+                  value={patientId}
+                  onChange={(e) => setPatientId(e.target.value)}
+                  className="w-full mt-1 px-2.5 py-1.5 text-sm bg-card border border-border rounded-md text-foreground focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Specimen Type</label>
+                <select
+                  value={specimenType}
+                  onChange={(e) => setSpecimenType(e.target.value)}
+                  className="w-full mt-1 px-2.5 py-1.5 text-sm bg-card border border-border rounded-md text-foreground focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50"
+                >
+                  {SPECIMEN_TYPES.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             <div className="flex gap-4">
               <button 
                 onClick={() => fileInputRef.current?.click()}

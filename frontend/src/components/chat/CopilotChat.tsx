@@ -2,8 +2,21 @@
 
 import { useState } from 'react';
 import { Send, Bot, Sparkles, AlertCircle, Eye, Loader2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { chatWithCopilot } from '@/lib/api';
 import { useActiveImageStore } from '@/store/activeImageStore';
+
+const markdownComponents = {
+  p: (props: React.ComponentPropsWithoutRef<'p'>) => <p className="leading-relaxed mb-2 last:mb-0" {...props} />,
+  strong: (props: React.ComponentPropsWithoutRef<'strong'>) => <strong className="font-bold text-foreground" {...props} />,
+  ul: (props: React.ComponentPropsWithoutRef<'ul'>) => <ul className="list-disc pl-4 mb-2 space-y-0.5" {...props} />,
+  ol: (props: React.ComponentPropsWithoutRef<'ol'>) => <ol className="list-decimal pl-4 mb-2 space-y-0.5" {...props} />,
+  li: (props: React.ComponentPropsWithoutRef<'li'>) => <li className="leading-relaxed" {...props} />,
+  h1: (props: React.ComponentPropsWithoutRef<'h1'>) => <h1 className="font-bold text-base mt-2 mb-1" {...props} />,
+  h2: (props: React.ComponentPropsWithoutRef<'h2'>) => <h2 className="font-bold text-sm mt-2 mb-1" {...props} />,
+  h3: (props: React.ComponentPropsWithoutRef<'h3'>) => <h3 className="font-bold text-sm mt-2 mb-1" {...props} />,
+  code: (props: React.ComponentPropsWithoutRef<'code'>) => <code className="bg-muted/50 px-1 py-0.5 rounded text-xs font-mono" {...props} />,
+};
 
 interface Message {
   id: string;
@@ -12,9 +25,9 @@ interface Message {
 }
 
 const QUICK_PROMPTS = [
-  "Explain classification",
-  "Summarize findings",
-  "Compare to history"
+  "Explain this case's classification result",
+  "Summarize this case's findings",
+  "Compare to this patient's history"
 ];
 
 export function CopilotChat() {
@@ -100,7 +113,11 @@ export function CopilotChat() {
                 ? 'bg-muted text-foreground rounded-l-xl rounded-tr-xl' 
                 : 'bg-transparent border border-border text-foreground rounded-r-xl rounded-tl-xl'
             }`}>
-              <p className="leading-relaxed">{msg.content}</p>
+              {msg.role === 'assistant' ? (
+                <ReactMarkdown components={markdownComponents}>{msg.content}</ReactMarkdown>
+              ) : (
+                <p className="leading-relaxed">{msg.content}</p>
+              )}
             </div>
           </div>
         ))}
