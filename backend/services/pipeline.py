@@ -194,10 +194,20 @@ class AnalysisPipeline:
 
                 # For timm Swin models, the final layer block is typically used
                 target_layers = [self.classifier.model.layers[-1]]
+
+                # timm's Swin stages output (B, H, W, C) — channels-last, and
+                # already spatial (no CLS token to drop, unlike ViT) — but
+                # pytorch_grad_cam assumes (B, C, H, W). Without this, gradients/
+                # activations get pooled along the wrong axis and the heatmap
+                # doesn't correspond to real spatial regions of the image.
+                def _swin_reshape_transform(tensor):
+                    return tensor.permute(0, 3, 1, 2)
+
                 explainer = ExplainabilityEngine(
                     model=self.classifier.model,
                     target_layers=target_layers,
-                    use_cuda=self.device.startswith("cuda")
+                    use_cuda=self.device.startswith("cuda"),
+                    reshape_transform=_swin_reshape_transform,
                 )
 
                 img_tensor = self.classifier.preprocess(image)

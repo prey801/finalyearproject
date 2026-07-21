@@ -13,23 +13,25 @@ class ExplainabilityEngine:
     """
     Unified engine to run explainability algorithms (GradCAM/SHAP) on model predictions.
     """
-    def __init__(self, model, target_layers, background_images=None, use_cuda=False):
+    def __init__(self, model, target_layers, background_images=None, use_cuda=False, reshape_transform=None):
         """
         Args:
             model: PyTorch model to explain.
             target_layers: List of target layers for GradCAM (e.g. [model.layer4[-1]]).
             background_images: Optional background tensor for SHAP initialization.
             use_cuda: Whether to use GPU.
+            reshape_transform: Optional callable for transformer backbones — see
+                GradCAMExplainer for details.
         """
         self.model = model
         self.use_cuda = use_cuda
-        
+
         if self.use_cuda:
             self.model = self.model.cuda()
             if background_images is not None:
                 background_images = background_images.cuda()
 
-        self.gradcam = GradCAMExplainer(model, target_layers, use_cuda=use_cuda)
+        self.gradcam = GradCAMExplainer(model, target_layers, use_cuda=use_cuda, reshape_transform=reshape_transform)
         self.shap_explainer = None
         
         if background_images is not None:

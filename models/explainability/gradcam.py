@@ -13,22 +13,27 @@ class GradCAMExplainer:
     Fully configurable GradCAM and GradCAM++ explainer.
     Allows specifying custom target layers for any CNN/Transformer architecture.
     """
-    def __init__(self, model, target_layers, use_cuda=False, method="gradcam++"):
+    def __init__(self, model, target_layers, use_cuda=False, method="gradcam++", reshape_transform=None):
         """
         Args:
             model: PyTorch model.
             target_layers: List of target layers (e.g., [model.layer4[-1]]).
             use_cuda: Whether to use GPU.
             method: 'gradcam' or 'gradcam++'.
+            reshape_transform: Optional callable converting a target layer's raw
+                output into (B, C, H, W). Required for transformer backbones
+                (e.g. Swin stages output (B, H, W, C)) — without it, pytorch_grad_cam
+                pools gradients/activations along the wrong axis and produces a
+                heatmap that doesn't correspond to real spatial regions.
         """
         self.model = model
         self.target_layers = target_layers
         self.use_cuda = use_cuda
-        
+
         if method.lower() == "gradcam++":
-            self.cam = GradCAMPlusPlus(model=model, target_layers=target_layers) # Removed use_cuda as it is inferred in newer versions or handle manually
+            self.cam = GradCAMPlusPlus(model=model, target_layers=target_layers, reshape_transform=reshape_transform)
         else:
-            self.cam = GradCAM(model=model, target_layers=target_layers)
+            self.cam = GradCAM(model=model, target_layers=target_layers, reshape_transform=reshape_transform)
 
     def generate_heatmap(self, input_tensor, target_category=None, original_image=None):
         """
