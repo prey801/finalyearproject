@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List
@@ -5,10 +6,28 @@ from sqlalchemy import func as sa_func
 from sqlalchemy.orm import Session
 from backend.database.session import get_db
 from backend.database.models import PredictionRecord, User as DBUser
-from backend.schemas.analysis import AnalysisResponse, ReviewRequest, MetricsSummary
+from backend.schemas.analysis import AnalysisResponse, ReviewRequest, MetricsSummary, SimilarCase
 from backend.auth.dependencies import get_current_active_user
+from rag.vector_store.qdrant_client import QdrantVectorStore
 
 router = APIRouter(prefix="", tags=["history"])
+
+# Lazily-created — a lightweight Qdrant connection only, not the heavy
+# BiomedCLIP/DINOv2 models themselves (those only run where new images get
+# indexed, i.e. the Celery worker's AnalysisPipeline). Looking up an
+# already-indexed case's stored vector never needs the models loaded.
+_similarity_store = None
+
+def _get_similarity_store() -> QdrantVectorStore:
+    global _similarity_store
+    if _similarity_store is None:
+        _similarity_store = QdrantVectorStore(
+            host=os.environ.get("QDRANT_HOST", "localhost"),
+            port=int(os.environ.get("QDRANT_PORT", "6333")),
+            collection_name="case_biomedclip",
+            vector_size=512,
+        )
+    return _similarity_store
 
 RANGE_DURATIONS = {
     "today": timedelta(days=1),
@@ -79,6 +98,35 @@ def get_prediction(sample_id: str, db: Session = Depends(get_db), current_user: 
     if not record:
         raise HTTPException(status_code=404, detail="Prediction not found")
     return record
+
+@router.get("/history/{sample_id}/similar", response_model=List[SimilarCase])
+def get_similar_cases(sample_id: str, limit: int = 5, db: Session = Depends(get_db), current_user: DBUser = Depends(get_current_active_user)):
+    """Visually similar past cases, via BiomedCLIP image embeddings indexed
+    at analysis time. Powers the report panel's "Similar Cases" section and
+    the Copilot's "Compare to this patient's history" prompt."""
+    record = db.query(PredictionRecord).filter(PredictionRecord.sample_id == sample_id, PredictionRecord.user_id == current_user.id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Prediction not found")
+
+    store = _get_similarity_store()
+    vector = store.retrieve_vector(sample_id)
+    if vector is None:
+        return []
+
+    # +1 since the case being queried matches itself with score 1.0
+    results = store.search(vector, limit=limit + 1)
+    similar = [r for r in results if r["payload"].get("sample_id") != sample_id][:limit]
+
+    return [
+        SimilarCase(
+            sample_id=r["payload"].get("sample_id", ""),
+            patient_id=r["payload"].get("patient_id", ""),
+            prediction=r["payload"].get("prediction", ""),
+            parasitemia=r["payload"].get("parasitemia", 0.0),
+            similarity=round(r["score"], 4),
+        )
+        for r in similar
+    ]
 
 @router.post("/review/{sample_id}")
 def submit_review(sample_id: str, review: ReviewRequest, db: Session = Depends(get_db), current_user: DBUser = Depends(get_current_active_user)):

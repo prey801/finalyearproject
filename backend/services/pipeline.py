@@ -34,21 +34,29 @@ class AnalysisPipeline:
             self.yolo_model = None
             self.seg_model = None
             self.classifier = None
+            self.embedding_service = None
         else:
             from models.yolo.model import ObjectDetectionModel
             from models.classification.model import DiseaseClassificationModel
             from models.quality.model import QualityAssessmentModel
             from models.segmentation.model import SegmentationModel
+            from backend.services.case_embeddings import CaseEmbeddingService
 
             try:
                 self.quality_model = QualityAssessmentModel(device=device)
             except Exception as e:
                 logger.warning("Failed to load QualityAssessmentModel (e.g., weights missing). Disabling quality check. Error: %s", e)
                 self.quality_model = None
-                
+
             self.yolo_model     = ObjectDetectionModel(device=device)
             self.seg_model      = SegmentationModel(device=device)
             self.classifier     = DiseaseClassificationModel(device=device)
+
+            try:
+                self.embedding_service = CaseEmbeddingService(device=device)
+            except Exception as e:
+                logger.warning("Failed to load foundation models (BiomedCLIP/DINOv2). Disabling similarity search/typicality. Error: %s", e)
+                self.embedding_service = None
 
             logger.info(
                 "AnalysisPipeline initialised | device=%s | "
@@ -190,6 +198,20 @@ class AnalysisPipeline:
             prediction, confidence * 100.0, parasitemia, total_cells=total_cells
         )
 
+        # ── 5.5. Case Embeddings (BiomedCLIP similarity + DINOv2 typicality) ──
+        image_typicality = None
+        if self.embedding_service is not None:
+            try:
+                image_typicality = self.embedding_service.index_case(
+                    image=image,
+                    sample_id=sample_id,
+                    patient_id=patient_id,
+                    prediction=prediction,
+                    parasitemia=parasitemia,
+                )
+            except Exception as e:
+                logger.warning("Case embedding indexing failed (non-fatal): %s", e)
+
         # ── 6. Construct Response ─────────────────────────────────────────────
         return AnalysisResponse(
             sample_id=sample_id,
@@ -212,4 +234,5 @@ class AnalysisPipeline:
                 "classification": "swin_tiny_patch4_window7_224_malaria",
                 "llm":            self.rag_service.llm.model_name or "stub",
             },
+            image_typicality=image_typicality,
         )

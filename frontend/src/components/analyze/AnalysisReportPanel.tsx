@@ -1,8 +1,10 @@
 'use client';
 
-import { X, FileText, AlertTriangle, CheckCircle2, Microscope } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { X, FileText, AlertTriangle, CheckCircle2, Microscope, Images } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { AnalysisResponse } from '@/lib/api';
+import { AnalysisResponse, SimilarCase, getSimilarCases } from '@/lib/api';
 
 interface AnalysisReportPanelProps {
   result: AnalysisResponse;
@@ -23,6 +25,17 @@ const markdownComponents = {
 export function AnalysisReportPanel({ result, onClose }: AnalysisReportPanelProps) {
   const isAbnormal = result.prediction?.toLowerCase() === 'malaria';
   const isLowConfidence = result.confidence < 70;
+  const isAtypical = result.image_typicality != null && result.image_typicality < 0.5;
+
+  const [similarCases, setSimilarCases] = useState<SimilarCase[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getSimilarCases(result.sample_id)
+      .then((cases) => { if (!cancelled) setSimilarCases(cases); })
+      .catch((err) => console.error('Failed to fetch similar cases:', err));
+    return () => { cancelled = true; };
+  }, [result.sample_id]);
 
   return (
     <>
@@ -107,6 +120,13 @@ export function AnalysisReportPanel({ result, onClose }: AnalysisReportPanelProp
             </div>
           )}
 
+          {isAtypical && (
+            <div className="flex items-center gap-2 text-xs font-medium text-warning bg-warning/10 border border-warning/30 px-3 py-2 rounded-md">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+              This image looks visually unusual compared to previously processed cases (typicality: {(result.image_typicality! * 100).toFixed(0)}%) — results may be less reliable.
+            </div>
+          )}
+
           {/* Report text */}
           <div>
             <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
@@ -117,6 +137,35 @@ export function AnalysisReportPanel({ result, onClose }: AnalysisReportPanelProp
               <ReactMarkdown components={markdownComponents}>{result.report}</ReactMarkdown>
             </div>
           </div>
+
+          {/* Similar Cases */}
+          {similarCases.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                <Images className="w-4 h-4 text-muted-foreground" />
+                Similar Past Cases
+              </h3>
+              <div className="space-y-1.5">
+                {similarCases.map((c) => (
+                  <Link
+                    key={c.sample_id}
+                    href={`/dashboard/analyze?sample=${encodeURIComponent(c.sample_id)}`}
+                    className="flex items-center justify-between text-sm bg-muted/30 hover:bg-muted/60 border border-border rounded-md px-3 py-2 transition-colors"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground truncate">{c.sample_id}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {c.prediction} · Patient {c.patient_id} · {c.parasitemia.toFixed(1)}% parasitemia
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-xs font-mono text-muted-foreground ml-2">
+                      {(c.similarity * 100).toFixed(0)}%
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Model versions */}
           {result.model_versions && Object.keys(result.model_versions).length > 0 && (

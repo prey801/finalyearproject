@@ -24,10 +24,18 @@ class AnalysisResponse(BaseModel):
     review_required: bool
     model_versions: Dict[str, str]
     image_path: Optional[str] = None
+    image_typicality: Optional[float] = None
 
 class ReviewRequest(BaseModel):
     review_status: str
     notes: Optional[str] = None
+
+class SimilarCase(BaseModel):
+    sample_id: str
+    patient_id: str
+    prediction: str
+    parasitemia: float
+    similarity: float
 
 class MetricsSummary(BaseModel):
     images_analyzed: int

@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Send, Bot, Sparkles, AlertCircle, Eye, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { chatWithCopilot } from '@/lib/api';
+import { chatWithCopilot, getSimilarCases, SimilarCase } from '@/lib/api';
 import { useActiveImageStore } from '@/store/activeImageStore';
 
 const markdownComponents = {
@@ -38,6 +38,22 @@ export function CopilotChat() {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [similarCases, setSimilarCases] = useState<SimilarCase[]>([]);
+
+  // Powers "Compare to this patient's history" with real visually-similar
+  // past cases (BiomedCLIP embedding search) instead of asking the LLM to
+  // compare against nothing.
+  useEffect(() => {
+    if (!analysisResult) {
+      setSimilarCases([]);
+      return;
+    }
+    let cancelled = false;
+    getSimilarCases(analysisResult.sample_id)
+      .then((cases) => { if (!cancelled) setSimilarCases(cases); })
+      .catch((err) => console.error('Failed to fetch similar cases:', err));
+    return () => { cancelled = true; };
+  }, [analysisResult]);
 
 
   const handleSend = async (text: string = input) => {
@@ -58,6 +74,13 @@ export function CopilotChat() {
 - Infected Cells: ${analysisResult.infected_cells} / ${analysisResult.total_cells}
 - Quality: ${analysisResult.quality}
 - Generated Report: ${analysisResult.report}`;
+
+        if (similarCases.length > 0) {
+          context += `\n\nVisually Similar Past Cases (by image similarity, most similar first):\n` +
+            similarCases.map((c, i) =>
+              `${i + 1}. ${c.sample_id} — Patient ${c.patient_id} — ${c.prediction} (${c.parasitemia.toFixed(1)}% parasitemia) — ${(c.similarity * 100).toFixed(0)}% similar`
+            ).join('\n');
+        }
       }
       
       const reply = await chatWithCopilot(text, context);

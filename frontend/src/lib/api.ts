@@ -54,7 +54,23 @@ export interface AnalysisResponse {
   review_required: boolean;
   model_versions: Record<string, string>;
   image_path: string | null;
+  image_typicality: number | null;
 }
+
+export interface SimilarCase {
+  sample_id: string;
+  patient_id: string;
+  prediction: string;
+  parasitemia: number;
+  similarity: number;
+}
+
+export const getSimilarCases = async (sampleId: string, limit = 5): Promise<SimilarCase[]> => {
+  const response = await apiClient.get<SimilarCase[]>(`/history/${sampleId}/similar`, {
+    params: { limit },
+  });
+  return response.data;
+};
 
 export const analyzeImage = async (file: File, patientId: string, specimenType: string): Promise<AnalysisResponse> => {
   const formData = new FormData();

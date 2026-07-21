@@ -87,6 +87,7 @@ def process_analysis_task(self, filepath: str, patient_id: str, specimen_type: s
                 model_versions=result.model_versions,
                 processing_time_ms=processing_time_ms,
                 image_path=image_url,
+                image_typicality=result.image_typicality,
             )
             db.add(db_record)
             db.commit()

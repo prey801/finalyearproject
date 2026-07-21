@@ -33,5 +33,6 @@ class PredictionRecord(Base):
     model_versions = Column(JSON, nullable=True)
     processing_time_ms = Column(Float, nullable=True)
     image_path = Column(String, nullable=True)
+    image_typicality = Column(Float, nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
