@@ -22,6 +22,16 @@ function AnalyzePageInner() {
   const searchParams = useSearchParams();
   const sampleId = searchParams.get('sample');
 
+  // "New Analysis" (no ?sample= in the URL): the workspace store is global
+  // and outlives navigation, so without this a fresh visit would keep
+  // showing whatever case was last open instead of the upload/camera screen.
+  useEffect(() => {
+    if (sampleId) return;
+    setAnalysisResult(null);
+    setImageUrl(null);
+    setShowReport(false);
+  }, [sampleId, setAnalysisResult, setImageUrl]);
+
   // Reopening a past case from History/Dashboard: load its real result
   // (and slide image, if one was persisted) into the workspace so the
   // report panel and Copilot chat both have full context.
