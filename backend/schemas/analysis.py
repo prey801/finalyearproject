@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 from typing import Dict, Any, List, Optional
 from enum import Enum
 
@@ -32,6 +32,14 @@ class AnalysisResponse(BaseModel):
     model_versions: Dict[str, str]
     image_path: Optional[str] = None
     image_typicality: Optional[float] = None
+
+    @field_validator("detections", mode="before")
+    @classmethod
+    def _null_detections_to_empty_list(cls, v):
+        # Rows created before the `detections` column existed have it as
+        # NULL in the DB — from_attributes passes that through as None,
+        # which fails validation against a non-Optional list.
+        return v or []
 
 class ReviewRequest(BaseModel):
     review_status: str
