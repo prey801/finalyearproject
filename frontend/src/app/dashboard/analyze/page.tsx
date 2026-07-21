@@ -1,10 +1,23 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import { ImageViewer } from '@/components/viewer/ImageViewer';
 import { CopilotChat } from '@/components/chat/CopilotChat';
+import { AnalysisReportPanel } from '@/components/analyze/AnalysisReportPanel';
+import { useActiveImageStore } from '@/store/activeImageStore';
 
 export default function AnalyzePage() {
+  const { analysisResult } = useActiveImageStore();
+  const [showReport, setShowReport] = useState(false);
+
+  // Auto-open the report panel as soon as a new analysis result lands
+  useEffect(() => {
+    if (analysisResult) setShowReport(true);
+  }, [analysisResult]);
+
   return (
     <div className="h-full p-4 bg-background">
-      {/* 
+      {/*
         Grid layout:
         - lg (1024px+): 1fr (Viewer) + 320px (Chat)
         - xl (1280px+): 1fr (Viewer) + 380px (Chat)
@@ -18,6 +31,10 @@ export default function AnalyzePage() {
           <CopilotChat />
         </div>
       </div>
+
+      {showReport && analysisResult && (
+        <AnalysisReportPanel result={analysisResult} onClose={() => setShowReport(false)} />
+      )}
     </div>
   );
 }
