@@ -56,7 +56,7 @@ export interface AnalysisResponse {
   total_cells: number;
   parasitemia: number;
   detections: Detection[];
-  heatmap_path: string;
+  heatmap_path: string | null;
   report: string;
   review_required: boolean;
   model_versions: Record<string, string>;

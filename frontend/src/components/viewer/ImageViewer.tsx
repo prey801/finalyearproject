@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useActiveImageStore } from '@/store/activeImageStore';
-import { ZoomIn, ZoomOut, Hand, MousePointer2, SlidersHorizontal, Map, Ruler, UploadCloud, Microscope, AlertTriangle, Camera } from 'lucide-react';
-import { analyzeImage } from '@/lib/api';
+import { ZoomIn, ZoomOut, Hand, MousePointer2, SlidersHorizontal, Map, Ruler, UploadCloud, Microscope, AlertTriangle, Camera, Flame } from 'lucide-react';
+import { analyzeImage, fetchImageAsBlobUrl } from '@/lib/api';
 import { X } from 'lucide-react';
 
 const PIPELINE_STAGES = [
@@ -31,7 +31,8 @@ const ZOOM_MAX = 400;
 const ZOOM_STEP = 25;
 
 export function ImageViewer() {
-  const { imageUrl, setImageUrl, isExplainabilityMode, analysisResult, setAnalysisResult } = useActiveImageStore();
+  const { imageUrl, setImageUrl, isExplainabilityMode, toggleExplainabilityMode, analysisResult, setAnalysisResult } = useActiveImageStore();
+  const [heatmapUrl, setHeatmapUrl] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const minimapCanvasRef = useRef<HTMLCanvasElement>(null);
   const loadedImgRef = useRef<HTMLImageElement | null>(null);
@@ -80,6 +81,37 @@ export function ImageViewer() {
       setPipelineStage(4);
     }
   }, [analysisResult, isAnalyzing]);
+
+  // Fetch the GradCAM heatmap (through apiClient, like the slide image, so
+  // auth + ngrok headers are attached) whenever a result with one arrives.
+  useEffect(() => {
+    const heatmapPath = analysisResult?.heatmap_path;
+    if (!heatmapPath) {
+      setHeatmapUrl(null);
+      return;
+    }
+    let blobUrl: string | null = null;
+    let cancelled = false;
+
+    fetchImageAsBlobUrl(heatmapPath)
+      .then((url) => {
+        if (cancelled) {
+          URL.revokeObjectURL(url);
+          return;
+        }
+        blobUrl = url;
+        setHeatmapUrl(url);
+      })
+      .catch((err) => {
+        console.error('Failed to load GradCAM heatmap:', err);
+        if (!cancelled) setHeatmapUrl(null);
+      });
+
+    return () => {
+      cancelled = true;
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+    };
+  }, [analysisResult?.heatmap_path]);
 
   const onCanvasMouseDown = useCallback((e: React.MouseEvent) => {
     if (activeTool !== 'pan') return;
@@ -242,7 +274,10 @@ export function ImageViewer() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    if (!imageUrl) {
+    const showHeatmap = isExplainabilityMode && !!heatmapUrl;
+    const displaySrc = showHeatmap ? heatmapUrl : imageUrl;
+
+    if (!displaySrc) {
       // Reopened a past case that has no saved slide image (e.g. analyzed
       // before image persistence was added) — say so instead of a blank canvas.
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -258,7 +293,11 @@ export function ImageViewer() {
 
     const img = new window.Image();
     img.onload = () => {
-      loadedImgRef.current = img;
+      // The minimap always reflects the real slide, not the heatmap overlay
+      // (which is a small fixed-resolution crop, not the full slide).
+      if (!showHeatmap) {
+        loadedImgRef.current = img;
+      }
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = '#1e1e2f';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -280,9 +319,10 @@ export function ImageViewer() {
       }
       ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
 
-      // Only draw annotations if we are past detection phase, and only once
-      // real detection results for THIS image have arrived.
-      if (pipelineStage >= 3 && analysisResult?.detections?.length) {
+      // Detection boxes are in the original upload's pixel coordinates, which
+      // don't correspond to the heatmap's fixed 224x224 crop — only draw them
+      // over the real slide.
+      if (!showHeatmap && pipelineStage >= 3 && analysisResult?.detections?.length) {
         const scaleX = drawWidth / img.width;
         const scaleY = drawHeight / img.height;
 
@@ -317,10 +357,10 @@ export function ImageViewer() {
       }
     };
     img.onerror = () => {
-      console.error('Failed to load slide image for preview:', imageUrl);
+      console.error('Failed to load image for preview:', displaySrc);
     };
-    img.src = imageUrl;
-  }, [imageUrl, isExplainabilityMode, pipelineStage, analysisResult]);
+    img.src = displaySrc;
+  }, [imageUrl, heatmapUrl, isExplainabilityMode, pipelineStage, analysisResult]);
 
   // Minimap: a small overview of the full slide with a rectangle showing
   // the current zoom/pan viewport. Redraws whenever it's toggled on or the
@@ -494,6 +534,18 @@ export function ImageViewer() {
             >
               <Map className="w-4 h-4" />
             </button>
+            {analysisResult?.heatmap_path && (
+              <>
+                <div className="w-px h-6 bg-border mx-1"></div>
+                <button
+                  onClick={toggleExplainabilityMode}
+                  className={`p-2 rounded-md transition-all active:scale-95 ${isExplainabilityMode ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
+                  title="Toggle GradCAM Heatmap"
+                >
+                  <Flame className="w-4 h-4" />
+                </button>
+              </>
+            )}
           </div>
 
           {/* Scale Bar Overlay */}
