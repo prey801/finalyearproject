@@ -21,15 +21,17 @@ async def analyze_image(
     specimen_type: str = Form(...),
     current_user: User = Depends(get_current_active_user)
 ):
-    if not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="File provided is not an image.")
-    
     try:
         contents = await file.read()
         if len(contents) > 10 * 1024 * 1024:
             raise HTTPException(status_code=413, detail="File too large. Maximum size is 10MB.")
-        
-        # Magic byte check
+
+        # Magic byte check — the actual, trustworthy validation. We don't
+        # gate on the browser-supplied Content-Type header: it's unreliable
+        # for the whole-slide pathology formats (.svs, .ndpi) this endpoint
+        # is supposed to accept, since browsers have no registered MIME type
+        # for them and send something generic like application/octet-stream,
+        # which would otherwise reject perfectly valid uploads.
         magic = contents[:4]
         if not (magic.startswith(b'\xff\xd8') or magic.startswith(b'\x89PNG') or magic.startswith(b'GIF8') or magic.startswith(b'BM') or magic.startswith(b'II*\x00') or magic.startswith(b'MM\x00*')):
             raise HTTPException(status_code=400, detail="Invalid image file format (magic byte check failed).")
