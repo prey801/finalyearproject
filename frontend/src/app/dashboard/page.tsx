@@ -25,7 +25,8 @@ export default function Home() {
             patient: item.patient_id,
             type: item.specimen_type,
             status: item.review_required ? 'Review Required' : 'Completed',
-            findings: item.prediction?.toLowerCase() === 'malaria' ? `Abnormal (${item.parasitemia}%)` : 'Normal'
+            findings: item.prediction?.toLowerCase() === 'malaria' ? `Abnormal (${item.parasitemia}%)` : 'Normal',
+            report: item.report
           })));
         }
         setError(null);

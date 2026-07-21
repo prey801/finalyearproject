@@ -47,8 +47,13 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
             
         username = email if email else sub
         
-        # Upsert user to keep local DB in sync with Supabase Auth
-        user = db.query(User).filter((User.email == email) | (User.username == username)).first()
+        # Upsert user to keep local DB in sync with Supabase Auth.
+        # Only match on email when it's present — email is nullable, and
+        # `User.email == None` would otherwise match any other null-email user.
+        if email:
+            user = db.query(User).filter((User.email == email) | (User.username == username)).first()
+        else:
+            user = db.query(User).filter(User.username == username).first()
         if not user:
             user = User(
                 username=username,

@@ -8,6 +8,7 @@ export interface CaseData {
   type: string;
   status: string;
   findings: string;
+  report?: string;
 }
 
 interface CaseSummaryPanelProps {
@@ -90,16 +91,14 @@ export function CaseSummaryPanel({ data, onClose }: CaseSummaryPanelProps) {
             </Link>
           </div>
 
-          {/* AI Report Summary Mockup */}
+          {/* AI Report Summary */}
           <div>
             <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
               <FileText className="w-4 h-4 text-muted-foreground" />
               Automated Summary
             </h3>
-            <div className="bg-muted/30 rounded-lg p-3.5 border border-border text-sm text-foreground/80 leading-relaxed">
-              {data.findings.includes('Abnormal') 
-                ? "The AI model detected high-confidence anomalies consistent with atypical cell structures. Two distinct regions were flagged for immediate pathologist review. Nuclear pleomorphism is prominent."
-                : "The analysis completed successfully. No significant anomalies were detected by the model. Cell morphology appears within normal limits for the specified specimen type."}
+            <div className="bg-muted/30 rounded-lg p-3.5 border border-border text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
+              {data.report?.trim() || "No automated summary is available for this case."}
             </div>
           </div>
         </div>
