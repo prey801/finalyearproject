@@ -103,7 +103,7 @@ export function CaseSummaryPanel({ data, onClose }: CaseSummaryPanelProps) {
 
         <div className="p-5 border-t border-border bg-muted/10">
           <Link 
-            href="/analyze" 
+            href="/dashboard/analyze" 
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-2.5 rounded-md font-medium shadow-sm transition-colors flex items-center justify-center gap-2"
           >
             Open in Analyze Workspace
