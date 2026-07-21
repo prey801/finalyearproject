@@ -1,14 +1,42 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ImageViewer } from '@/components/viewer/ImageViewer';
 import { CopilotChat } from '@/components/chat/CopilotChat';
 import { AnalysisReportPanel } from '@/components/analyze/AnalysisReportPanel';
 import { useActiveImageStore } from '@/store/activeImageStore';
+import { getAnalysisById, API_URL } from '@/lib/api';
 
 export default function AnalyzePage() {
-  const { analysisResult } = useActiveImageStore();
+  return (
+    <Suspense fallback={null}>
+      <AnalyzePageInner />
+    </Suspense>
+  );
+}
+
+function AnalyzePageInner() {
+  const { analysisResult, setAnalysisResult, setImageUrl } = useActiveImageStore();
   const [showReport, setShowReport] = useState(false);
+  const searchParams = useSearchParams();
+  const sampleId = searchParams.get('sample');
+
+  // Reopening a past case from History/Dashboard: load its real result
+  // (and slide image, if one was persisted) into the workspace so the
+  // report panel and Copilot chat both have full context.
+  useEffect(() => {
+    if (!sampleId) return;
+    getAnalysisById(sampleId)
+      .then((result) => {
+        setAnalysisResult(result);
+        setImageUrl(result.image_path ? `${API_URL}${result.image_path}` : null);
+      })
+      .catch((err) => {
+        console.error(`Failed to load case ${sampleId}:`, err);
+        alert(`Could not load case ${sampleId}. It may have been deleted.`);
+      });
+  }, [sampleId, setAnalysisResult, setImageUrl]);
 
   // Auto-open the report panel as soon as a new analysis result lands
   useEffect(() => {

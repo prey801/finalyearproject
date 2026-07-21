@@ -32,5 +32,6 @@ class PredictionRecord(Base):
     review_required = Column(Boolean, default=True)
     model_versions = Column(JSON, nullable=True)
     processing_time_ms = Column(Float, nullable=True)
+    image_path = Column(String, nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())

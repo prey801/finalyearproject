@@ -172,9 +172,23 @@ export function ImageViewer() {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !imageUrl) return;
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    if (!imageUrl) {
+      // Reopened a past case that has no saved slide image (e.g. analyzed
+      // before image persistence was added) — say so instead of a blank canvas.
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#1e1e2f';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#9ca3af';
+      ctx.font = '20px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('No slide image saved for this case', canvas.width / 2, canvas.height / 2);
+      ctx.textAlign = 'left';
+      return;
+    }
 
     const img = new window.Image();
     img.onload = () => {
@@ -222,7 +236,7 @@ export function ImageViewer() {
 
   return (
     <div className="flex flex-col h-full bg-card rounded-xl overflow-hidden border border-border shadow-sm relative">
-      {imageUrl ? (
+      {(imageUrl || analysisResult) ? (
         <>
           {/* Slide Identity Bar — always visible so it's unambiguous which
               slide/patient is currently loaded, whether just uploaded,
@@ -244,11 +258,14 @@ export function ImageViewer() {
             </div>
             {analysisResult && (
               <span className={`shrink-0 text-xs font-bold uppercase px-2 py-0.5 rounded-full ${
-                analysisResult.prediction?.toLowerCase() === 'malaria'
-                  ? 'bg-destructive/10 text-destructive'
-                  : 'bg-green-500/10 text-green-600'
+                analysisResult.confidence < 70
+                  ? 'bg-muted text-muted-foreground'
+                  : analysisResult.prediction?.toLowerCase() === 'malaria'
+                    ? 'bg-destructive/10 text-destructive'
+                    : 'bg-green-500/10 text-green-600'
               }`}>
                 {analysisResult.prediction}
+                {analysisResult.confidence < 70 ? ' (low confidence)' : ''}
               </span>
             )}
             {isAnalyzing && !analysisResult && (

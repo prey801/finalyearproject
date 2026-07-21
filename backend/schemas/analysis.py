@@ -23,6 +23,7 @@ class AnalysisResponse(BaseModel):
     report: str
     review_required: bool
     model_versions: Dict[str, str]
+    image_path: Optional[str] = None
 
 class ReviewRequest(BaseModel):
     review_status: str

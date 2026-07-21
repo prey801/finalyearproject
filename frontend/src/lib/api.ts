@@ -53,7 +53,12 @@ export interface AnalysisResponse {
   report: string;
   review_required: boolean;
   model_versions: Record<string, string>;
+  image_path: string | null;
 }
+
+// API_URL is also exported so callers can build full URLs for relative
+// paths the backend returns (e.g. image_path, heatmap_path).
+export { API_URL };
 
 export const analyzeImage = async (file: File, patientId: string, specimenType: string): Promise<AnalysisResponse> => {
   const formData = new FormData();

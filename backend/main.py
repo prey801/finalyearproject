@@ -11,6 +11,9 @@ from backend.database.session import engine, Base
 HEATMAPS_DIR = os.path.join(os.environ.get("PROJECT_DIR", "/app"), "heatmaps")
 os.makedirs(HEATMAPS_DIR, exist_ok=True)
 
+UPLOADS_DIR = os.path.join(os.environ.get("PROJECT_DIR", "/app"), "uploads")
+os.makedirs(UPLOADS_DIR, exist_ok=True)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Ensure database tables exist if migrations weren't run
@@ -50,6 +53,7 @@ app.include_router(history.router)
 app.include_router(chat.router)
 
 app.mount("/heatmaps", StaticFiles(directory=HEATMAPS_DIR), name="heatmaps")
+app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 
 @app.get("/")
 def read_root():

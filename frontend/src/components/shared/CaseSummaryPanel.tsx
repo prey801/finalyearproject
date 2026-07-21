@@ -73,18 +73,21 @@ export function CaseSummaryPanel({ data, onClose }: CaseSummaryPanelProps) {
             </div>
           </div>
 
-          {/* Slide Preview Mockup */}
+          {/* Slide Preview */}
           <div>
             <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
               <ImageIcon className="w-4 h-4 text-muted-foreground" />
               Slide Overview
             </h3>
-            <div className="aspect-[16/9] bg-muted/30 rounded-lg border border-border flex items-center justify-center relative overflow-hidden group">
+            <Link
+              href={`/dashboard/analyze?sample=${encodeURIComponent(data.id)}`}
+              className="aspect-[16/9] bg-muted/30 rounded-lg border border-border flex items-center justify-center relative overflow-hidden group"
+            >
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <span className="text-white text-sm font-medium">Click to open full viewer</span>
               </div>
               <Activity className="w-8 h-8 text-muted-foreground/30" />
-            </div>
+            </Link>
           </div>
 
           {/* AI Report Summary Mockup */}
@@ -102,8 +105,8 @@ export function CaseSummaryPanel({ data, onClose }: CaseSummaryPanelProps) {
         </div>
 
         <div className="p-5 border-t border-border bg-muted/10">
-          <Link 
-            href="/dashboard/analyze" 
+          <Link
+            href={`/dashboard/analyze?sample=${encodeURIComponent(data.id)}`}
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-2.5 rounded-md font-medium shadow-sm transition-colors flex items-center justify-center gap-2"
           >
             Open in Analyze Workspace

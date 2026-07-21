@@ -62,7 +62,11 @@ def process_analysis_task(self, filepath: str, patient_id: str, specimen_type: s
         )
         processing_time_ms = (time.monotonic() - _start) * 1000
 
-        # Save to database
+        # Save to database — keep the uploaded slide image (don't delete it
+        # below on success) so past cases can be reopened in the Analyze
+        # workspace with their real image, not just the report text.
+        image_url = f"/uploads/{os.path.basename(filepath)}"
+
         db = SessionLocal()
         try:
             db_record = PredictionRecord(
@@ -81,20 +85,19 @@ def process_analysis_task(self, filepath: str, patient_id: str, specimen_type: s
                 report=result.report,
                 review_required=result.review_required,
                 model_versions=result.model_versions,
-                processing_time_ms=processing_time_ms
+                processing_time_ms=processing_time_ms,
+                image_path=image_url,
             )
             db.add(db_record)
             db.commit()
         except Exception as db_err:
             db.rollback()
             logger.error(f"Failed to save to database: {db_err}")
+            if os.path.exists(filepath):
+                os.remove(filepath)
             return {"error": "Database error while saving results"}
         finally:
             db.close()
-
-        # Clean up temporary file
-        if os.path.exists(filepath):
-            os.remove(filepath)
 
         return {
             "sample_id": result.sample_id,

@@ -22,6 +22,7 @@ const markdownComponents = {
 
 export function AnalysisReportPanel({ result, onClose }: AnalysisReportPanelProps) {
   const isAbnormal = result.prediction?.toLowerCase() === 'malaria';
+  const isLowConfidence = result.confidence < 70;
 
   return (
     <>
@@ -47,13 +48,20 @@ export function AnalysisReportPanel({ result, onClose }: AnalysisReportPanelProp
         <div className="flex-1 overflow-y-auto p-5 space-y-6">
           {/* Prediction banner */}
           <div className={`flex items-center gap-3 p-4 rounded-lg border ${
-            isAbnormal ? 'bg-destructive/10 border-destructive/30' : 'bg-green-500/10 border-green-500/30'
+            isLowConfidence
+              ? 'bg-muted/30 border-border'
+              : isAbnormal ? 'bg-destructive/10 border-destructive/30' : 'bg-green-500/10 border-green-500/30'
           }`}>
-            {isAbnormal
-              ? <AlertTriangle className="w-6 h-6 text-destructive shrink-0" />
-              : <CheckCircle2 className="w-6 h-6 text-green-600 shrink-0" />}
+            {isLowConfidence
+              ? <AlertTriangle className="w-6 h-6 text-muted-foreground shrink-0" />
+              : isAbnormal
+                ? <AlertTriangle className="w-6 h-6 text-destructive shrink-0" />
+                : <CheckCircle2 className="w-6 h-6 text-green-600 shrink-0" />}
             <div>
-              <p className="font-bold text-foreground">{result.prediction}</p>
+              <p className="font-bold text-foreground">
+                {result.prediction}
+                {isLowConfidence && <span className="font-normal text-muted-foreground"> — low confidence, not conclusive</span>}
+              </p>
               <p className="text-xs text-muted-foreground">
                 Confidence: {result.confidence.toFixed(1)}%
                 {result.uncertainty != null ? ` · Uncertainty: ${result.uncertainty.toFixed(1)}%` : ''}
