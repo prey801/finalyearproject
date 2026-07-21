@@ -1,6 +1,6 @@
 import os
 import logging
-from models.llm.model import ClinicalLLMModel
+from models.llm.model import ClinicalLLMModel, LLMGenerationError
 from rag.embeddings.model import BGEM3EmbeddingModel
 from rag.vector_store.qdrant_client import QdrantVectorStore
 
@@ -62,8 +62,16 @@ class RAGService:
         Remember: You must state that this is an automated analysis and human review is recommended.
         """
         
-        report = self.llm.predict(prompt)
-        
+        try:
+            report = self.llm.predict(prompt)
+        except LLMGenerationError as e:
+            logging.error(f"LLM report generation failed: {e}. Falling back to a manual-review notice.")
+            report = (
+                "[Automated report generation failed] The Clinical Copilot could not be "
+                "reached to generate a narrative summary. Please review the detection "
+                "results below manually."
+            )
+
         # Append standard disclaimer and parasitemia
         final_report = f"{report}\n\nEstimated parasitemia is {parasitemia:.1f}%. Human review is recommended."
         return final_report

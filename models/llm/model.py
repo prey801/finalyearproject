@@ -9,6 +9,11 @@ except ImportError:
 from models.base import BaseModel
 
 
+class LLMGenerationError(Exception):
+    """Raised when a configured LLM client's API call itself fails (auth, timeout, etc.) —
+    distinct from stub mode, where no client is configured at all."""
+
+
 class ClinicalLLMModel(BaseModel):
     """
     LLM wrapper using GPT-4o (via OpenAI-compatible API on GitHub Models) to act as the Clinical Copilot.
@@ -70,7 +75,11 @@ class ClinicalLLMModel(BaseModel):
             )
             return response.choices[0].message.content
         except Exception as e:
-            return f"Error generating content: {e}"
+            # A configured client that fails is a real failure, not a valid
+            # reply — raise so callers can't accidentally show the raw
+            # exception text as if it were the LLM's own output (a clinical
+            # report or a Copilot chat message).
+            raise LLMGenerationError(str(e)) from e
 
     def generate_report(self, prediction: str, confidence: float) -> str:
         """Generate a clinician-friendly report based on CV model predictions."""

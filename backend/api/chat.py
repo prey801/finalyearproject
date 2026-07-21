@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import Optional
 from backend.auth.dependencies import get_current_active_user
 from backend.database.models import User
-from models.llm.model import ClinicalLLMModel
+from models.llm.model import ClinicalLLMModel, LLMGenerationError
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -37,5 +37,7 @@ async def chat_with_copilot(
             
         reply = llm.predict(prompt)
         return {"reply": reply}
+    except LLMGenerationError as e:
+        raise HTTPException(status_code=502, detail=f"Copilot is currently unavailable: {e}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
