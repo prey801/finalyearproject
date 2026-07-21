@@ -159,6 +159,10 @@ export const fetchImageAsBlobUrl = async (path: string): Promise<string> => {
 };
 
 export const chatWithCopilot = async (message: string, context?: string): Promise<string> => {
-  const response = await apiClient.post<{ reply: string }>('/chat/', { message, context });
+  // Unlike /analyze/ (fire-and-poll), this is a single synchronous round trip
+  // through auth session lookup + ngrok tunnel + LLM completion — the global
+  // 10s timeout is too tight for that chain and was aborting client-side
+  // while the backend was still working (and would return successfully).
+  const response = await apiClient.post<{ reply: string }>('/chat/', { message, context }, { timeout: 45000 });
   return response.data.reply;
 };

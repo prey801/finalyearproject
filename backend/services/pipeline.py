@@ -202,8 +202,12 @@ class AnalysisPipeline:
                 )
 
                 img_tensor = self.classifier.preprocess(image)
-                # original_image needs to be a float32 numpy array [0, 1]
-                original_img_np = np.array(image.convert("RGB")).astype(np.float32) / 255.0
+                # GradCAM's heatmap comes out at the model's input resolution
+                # (224x224 — whatever the classifier resizes to), so the
+                # overlay image must match that or show_cam_on_image's
+                # elementwise blend fails with a broadcast shape mismatch
+                # against the original upload's native resolution.
+                original_img_np = np.array(image.convert("RGB").resize((224, 224))).astype(np.float32) / 255.0
                 target_category = 1 if prediction == "malaria" else 0
 
                 res = explainer.explain_prediction(
