@@ -73,6 +73,13 @@ export function AnalysisReportPanel({ result, onClose }: AnalysisReportPanelProp
             </div>
           </div>
 
+          {result.total_cells === 0 && (
+            <div className="flex items-center gap-2 text-xs font-medium text-destructive bg-destructive/10 border border-destructive/30 px-3 py-2 rounded-md">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+              Cell detection found nothing on this image — parasitemia could not be measured. Treat this as inconclusive, not a negative result.
+            </div>
+          )}
+
           {result.review_required && (
             <div className="flex items-center gap-2 text-xs font-medium text-warning bg-warning/10 border border-warning/30 px-3 py-2 rounded-md">
               <AlertTriangle className="w-3.5 h-3.5 shrink-0" />

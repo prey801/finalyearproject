@@ -108,16 +108,21 @@ class AnalysisPipeline:
                 if "infected" in cls:
                     infected_cells += 1
 
-        # Fallback when YOLO runs in stub mode (no weights available)
         if total_cells == 0:
+            # No cells located — either YOLO is in stub mode (no weights) or
+            # the detector genuinely found nothing on this image. Report the
+            # real zero counts rather than fabricating a plausible-looking
+            # "100 cells counted" figure — that would misrepresent a failed
+            # detection as a clean negative result.
             logger.warning(
-                "YOLO returned no detections for sample %s — using fallback counts.",
+                "YOLO detected zero cells for sample %s — detection may have "
+                "failed (check image quality/format/weights). Reporting "
+                "actual zero counts instead of a fabricated total.",
                 sample_id,
             )
-            total_cells    = 100
-            infected_cells = 0
-
-        parasitemia = round((infected_cells / total_cells) * 100.0, 2)
+            parasitemia = 0.0
+        else:
+            parasitemia = round((infected_cells / total_cells) * 100.0, 2)
 
         # ── 3. Segmentation (SAM2 — optional, bbox-guided) ────────────────────
         bboxes = [d["bbox"] for d in detections if d.get("bbox")]
@@ -182,7 +187,7 @@ class AnalysisPipeline:
 
         # ── 5. Clinical Report Generation (RAG + LLM) ────────────────────────
         report = self.rag_service.generate_clinical_report(
-            prediction, confidence * 100.0, parasitemia
+            prediction, confidence * 100.0, parasitemia, total_cells=total_cells
         )
 
         # ── 6. Construct Response ─────────────────────────────────────────────

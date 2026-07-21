@@ -13,7 +13,7 @@ class RAGService:
         self.qdrant_store = QdrantVectorStore(host=qdrant_host, port=qdrant_port)
         self.llm = ClinicalLLMModel()
 
-    def generate_clinical_report(self, prediction: str, confidence: float, parasitemia: float) -> str:
+    def generate_clinical_report(self, prediction: str, confidence: float, parasitemia: float, total_cells: int = None) -> str:
         # 1. Retrieve guidelines context using RAG
         query = f"Malaria treatment guidelines for {prediction} case with {parasitemia:.2f}% parasitemia"
         context = ""
@@ -36,16 +36,28 @@ class RAGService:
             logging.warning(f"RAG retrieval failed: {e}. Falling back to default generation.")
             
         # 2. Use the LLM with the context to generate the report
+        detection_note = ""
+        if total_cells == 0:
+            detection_note = (
+                "\n        IMPORTANT: The cell-detection model located ZERO cells in this "
+                "image, so parasitemia could NOT actually be measured. Do not describe this "
+                "as a clean/negative result — explicitly state that cell detection failed "
+                "(likely due to poor image quality, framing, or an unsupported image type) "
+                "and that the slide should be re-imaged or reviewed manually rather than "
+                "trusting this prediction."
+            )
+
         prompt = f"""
         You are a Clinical Copilot for a microscopy analysis system.
         The computer vision system has made the following prediction:
         - Diagnosis: {prediction.capitalize()}
         - Confidence: {confidence}%
         - Parasitemia: {parasitemia:.2f}%
-        
+        {detection_note}
+
         Using the following clinical guidelines context (if available):
         {context if context else 'No context available.'}
-        
+
         Write a brief, clinician-friendly report summarizing these findings and recommending next steps based on the guidelines.
         Remember: You must state that this is an automated analysis and human review is recommended.
         """
