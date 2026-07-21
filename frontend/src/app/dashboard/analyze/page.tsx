@@ -6,7 +6,7 @@ import { ImageViewer } from '@/components/viewer/ImageViewer';
 import { CopilotChat } from '@/components/chat/CopilotChat';
 import { AnalysisReportPanel } from '@/components/analyze/AnalysisReportPanel';
 import { useActiveImageStore } from '@/store/activeImageStore';
-import { getAnalysisById, API_URL } from '@/lib/api';
+import { getAnalysisById, fetchImageAsBlobUrl } from '@/lib/api';
 
 export default function AnalyzePage() {
   return (
@@ -27,15 +27,35 @@ function AnalyzePageInner() {
   // report panel and Copilot chat both have full context.
   useEffect(() => {
     if (!sampleId) return;
+    let blobUrl: string | null = null;
+    let cancelled = false;
+
     getAnalysisById(sampleId)
-      .then((result) => {
+      .then(async (result) => {
+        if (cancelled) return;
         setAnalysisResult(result);
-        setImageUrl(result.image_path ? `${API_URL}${result.image_path}` : null);
+
+        if (!result.image_path) {
+          setImageUrl(null);
+          return;
+        }
+        try {
+          blobUrl = await fetchImageAsBlobUrl(result.image_path);
+          if (!cancelled) setImageUrl(blobUrl);
+        } catch (err) {
+          console.error(`Failed to load slide image for ${sampleId}:`, err);
+          if (!cancelled) setImageUrl(null);
+        }
       })
       .catch((err) => {
         console.error(`Failed to load case ${sampleId}:`, err);
         alert(`Could not load case ${sampleId}. It may have been deleted.`);
       });
+
+    return () => {
+      cancelled = true;
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+    };
   }, [sampleId, setAnalysisResult, setImageUrl]);
 
   // Auto-open the report panel as soon as a new analysis result lands

@@ -56,10 +56,6 @@ export interface AnalysisResponse {
   image_path: string | null;
 }
 
-// API_URL is also exported so callers can build full URLs for relative
-// paths the backend returns (e.g. image_path, heatmap_path).
-export { API_URL };
-
 export const analyzeImage = async (file: File, patientId: string, specimenType: string): Promise<AnalysisResponse> => {
   const formData = new FormData();
   formData.append('file', file);
@@ -133,6 +129,17 @@ export const getMetricsSummary = async (range: string): Promise<MetricsSummary> 
 export const getAnalysisById = async (sampleId: string): Promise<AnalysisResponse> => {
   const response = await apiClient.get<AnalysisResponse>(`/history/${sampleId}`);
   return response.data;
+};
+
+// A plain <img src="..."> pointed straight at a backend-served path (e.g.
+// image_path from a past case) can't set custom headers, so on ngrok's free
+// plan it hits the browser-warning interstitial instead of the real image
+// (the ngrok-skip-browser-warning header apiClient sends never gets sent by
+// the <img> tag itself). Fetch it through apiClient instead and hand back an
+// object URL. Caller is responsible for URL.revokeObjectURL when done.
+export const fetchImageAsBlobUrl = async (path: string): Promise<string> => {
+  const response = await apiClient.get(path, { responseType: 'blob' });
+  return URL.createObjectURL(response.data);
 };
 
 export const chatWithCopilot = async (message: string, context?: string): Promise<string> => {

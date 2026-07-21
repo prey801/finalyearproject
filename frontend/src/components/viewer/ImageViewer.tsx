@@ -65,6 +65,16 @@ export function ImageViewer() {
     setContrast(100);
   }, [imageUrl]);
 
+  // A result can arrive without going through the local upload flow (e.g.
+  // reopening a past case from History/Dashboard) — the pipeline stepper
+  // would otherwise be stuck showing "Upload" as the active stage for an
+  // already-completed case. Jump straight to the final stage in that case.
+  useEffect(() => {
+    if (analysisResult && !isAnalyzing) {
+      setPipelineStage(4);
+    }
+  }, [analysisResult, isAnalyzing]);
+
   const onCanvasMouseDown = useCallback((e: React.MouseEvent) => {
     if (activeTool !== 'pan') return;
     isPanningRef.current = true;
