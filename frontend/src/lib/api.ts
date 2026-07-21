@@ -38,6 +38,12 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+export interface Detection {
+  class_name: string;
+  bbox: number[]; // [x, y, width, height] in original image pixel coordinates
+  confidence: number;
+}
+
 export interface AnalysisResponse {
   sample_id: string;
   patient_id: string;
@@ -49,6 +55,7 @@ export interface AnalysisResponse {
   infected_cells: number;
   total_cells: number;
   parasitemia: number;
+  detections: Detection[];
   heatmap_path: string;
   report: string;
   review_required: boolean;

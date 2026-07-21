@@ -27,6 +27,7 @@ class PredictionRecord(Base):
     infected_cells = Column(Integer, nullable=False)
     total_cells = Column(Integer, nullable=False)
     parasitemia = Column(Float, nullable=False)
+    detections = Column(JSON, nullable=True)
     heatmap_path = Column(String, nullable=True)
     report = Column(Text, nullable=False)
     review_required = Column(Boolean, default=True)

@@ -113,37 +113,25 @@ class AnalysisPipeline:
         # Parasitized/Uninfected vs. stage labels like ring/trophozoite/
         # schizont/gametocyte). Classify by keyword instead of an exact class
         # list so counting doesn't silently zero out on a scheme this code
-        # wasn't hardcoded for.
-        CELL_KEYWORDS = (
-            "rbc", "cell", "wbc", "leukocyte", "parasitized", "uninfected", "healthy",
-        )
+        # wasn't hardcoded for. Every detection is one distinct cell — in the
+        # actual trained checkpoint's vocabulary (confirmed empirically), a
+        # stage label like "ring" bounds the infected cell itself rather than
+        # overlaying a separately-boxed RBC, and there's no dataset convention
+        # where that isn't the case, so there's no "standalone blob" to
+        # exclude from the denominator.
         NEGATIVE_KEYWORDS = ("healthy", "uninfected", "normal", "background", "wbc", "leukocyte")
         POSITIVE_KEYWORDS = (
             "infected", "parasit", "ring", "troph", "schizont", "gameto",
             "malaria", "plasmodium",
         )
 
-        # If the checkpoint's whole vocabulary has no whole-cell noun at all
-        # (e.g. pure stage labels: ring/trophozoite/schizont/gametocyte, no
-        # "rbc"/"cell" class), there's nothing to distinguish "the cell" from
-        # "the parasite in it" — every detection there IS the countable unit.
-        vocab = [str(v).lower() for v in getattr(self.yolo_model, "classes", {}).values()]
-        vocab_has_cell_class = any(any(kw in v for kw in CELL_KEYWORDS) for v in vocab)
-
         for det in detections:
             cls = det.get("class", "").lower()
+            total_cells += 1
             is_negative = any(kw in cls for kw in NEGATIVE_KEYWORDS)
             is_positive = any(kw in cls for kw in POSITIVE_KEYWORDS)
-            is_cell = any(kw in cls for kw in CELL_KEYWORDS)
-
-            # Only count whole-cell boxes toward the denominator — a standalone
-            # "parasite" blob overlaid on an already-counted infected_rbc box
-            # isn't a second cell. Skip that unless the vocabulary has no
-            # cell-level class at all, in which case every box is the unit.
-            if is_cell or not vocab_has_cell_class:
-                total_cells += 1
-                if is_positive and not is_negative:
-                    infected_cells += 1
+            if is_positive and not is_negative:
+                infected_cells += 1
 
         if total_cells == 0:
             # No cells located — either YOLO is in stub mode (no weights) or
@@ -160,6 +148,17 @@ class AnalysisPipeline:
             parasitemia = 0.0
         else:
             parasitemia = round((infected_cells / total_cells) * 100.0, 2)
+
+        # Raw per-box detections, for the viewer to draw real bounding boxes
+        # instead of the placeholder overlay it used to show.
+        detections_out = [
+            {
+                "class_name": det.get("class", ""),
+                "bbox": det.get("bbox", []),
+                "confidence": round(float(det.get("confidence", 0.0)), 4),
+            }
+            for det in detections
+        ]
 
         # ── 3. Segmentation (SAM2 — optional, bbox-guided) ────────────────────
         bboxes = [d["bbox"] for d in detections if d.get("bbox")]
@@ -257,6 +256,7 @@ class AnalysisPipeline:
             infected_cells=infected_cells,
             total_cells=total_cells,
             parasitemia=parasitemia,
+            detections=detections_out,
             heatmap_path=heatmap_url,
             report=report,
             review_required=True,  # always require human review — clinical safety requirement

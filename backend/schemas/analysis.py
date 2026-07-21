@@ -1,11 +1,17 @@
 from pydantic import BaseModel, ConfigDict
-from typing import Dict, Any, Optional
+from typing import Dict, Any, List, Optional
 from enum import Enum
 
 class SpecimenType(str, Enum):
     blood_smear = "Blood Smear"
     tissue_section = "Tissue Section"
     other = "Other"
+
+class Detection(BaseModel):
+    """A single YOLO detection box, in the original upload's pixel space."""
+    class_name: str
+    bbox: List[float]  # [x, y, width, height]
+    confidence: float
 
 class AnalysisResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -19,6 +25,7 @@ class AnalysisResponse(BaseModel):
     infected_cells: int
     total_cells: int
     parasitemia: float
+    detections: List[Detection] = []
     heatmap_path: Optional[str] = None
     report: str
     review_required: bool

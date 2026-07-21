@@ -16,6 +16,12 @@ const PIPELINE_STAGES = [
 
 const SPECIMEN_TYPES = ['Blood Smear', 'Tissue Section', 'Other'];
 
+// Mirrors the backend's classification keywords (backend/services/pipeline.py)
+// for styling detection boxes — purely presentational, so kept local rather
+// than shared, since the two don't need to stay byte-for-byte identical.
+const INFECTED_KEYWORDS = ['infected', 'parasit', 'ring', 'troph', 'schizont', 'gameto', 'malaria', 'plasmodium'];
+const NORMAL_KEYWORDS = ['healthy', 'uninfected', 'normal', 'background', 'wbc', 'leukocyte'];
+
 function generatePatientId() {
   return `P-${Math.floor(1000 + Math.random() * 9000)}`;
 }
@@ -274,26 +280,47 @@ export function ImageViewer() {
       }
       ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
 
-      // Only draw annotations if we are past detection phase
-      if (pipelineStage >= 3) {
-        // Draw simulated bounding box
-        ctx.strokeStyle = '#ef4444'; // destructive
-        ctx.lineWidth = 2;
-        ctx.strokeRect(100, 100, 150, 150);
+      // Only draw annotations if we are past detection phase, and only once
+      // real detection results for THIS image have arrived.
+      if (pipelineStage >= 3 && analysisResult?.detections?.length) {
+        const scaleX = drawWidth / img.width;
+        const scaleY = drawHeight / img.height;
 
-        // Draw label
-        ctx.fillStyle = '#ef4444';
-        ctx.fillRect(100, 80, 150, 20);
-        ctx.fillStyle = '#fff';
-        ctx.font = '12px sans-serif';
-        ctx.fillText('Abnormal Blast - 98%', 105, 94);
+        for (const det of analysisResult.detections) {
+          const cls = det.class_name.toLowerCase();
+          const isInfected = INFECTED_KEYWORDS.some(kw => cls.includes(kw))
+            && !NORMAL_KEYWORDS.some(kw => cls.includes(kw));
+
+          const [bx, by, bw, bh] = det.bbox;
+          const x = offsetX + bx * scaleX;
+          const y = offsetY + by * scaleY;
+          const w = bw * scaleX;
+          const h = bh * scaleY;
+
+          const color = isInfected ? '#ef4444' : 'rgba(148, 163, 184, 0.7)'; // destructive vs. muted slate
+          ctx.strokeStyle = color;
+          ctx.lineWidth = isInfected ? 2 : 1;
+          ctx.strokeRect(x, y, w, h);
+
+          // Only label infection-relevant boxes — labeling every plain red
+          // blood cell box (there can be dozens) would bury the signal.
+          if (isInfected) {
+            const label = `${det.class_name} - ${(det.confidence * 100).toFixed(0)}%`;
+            ctx.font = '12px sans-serif';
+            const labelWidth = ctx.measureText(label).width + 8;
+            ctx.fillStyle = color;
+            ctx.fillRect(x, Math.max(0, y - 18), labelWidth, 18);
+            ctx.fillStyle = '#fff';
+            ctx.fillText(label, x + 4, Math.max(12, y - 4));
+          }
+        }
       }
     };
     img.onerror = () => {
       console.error('Failed to load slide image for preview:', imageUrl);
     };
     img.src = imageUrl;
-  }, [imageUrl, isExplainabilityMode, pipelineStage]);
+  }, [imageUrl, isExplainabilityMode, pipelineStage, analysisResult]);
 
   // Minimap: a small overview of the full slide with a rectangle showing
   // the current zoom/pan viewport. Redraws whenever it's toggled on or the

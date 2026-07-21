@@ -81,6 +81,7 @@ def process_analysis_task(self, filepath: str, patient_id: str, specimen_type: s
                 infected_cells=result.infected_cells,
                 total_cells=result.total_cells,
                 parasitemia=result.parasitemia,
+                detections=[d.model_dump() for d in result.detections],
                 heatmap_path=result.heatmap_path,
                 report=result.report,
                 review_required=result.review_required,
