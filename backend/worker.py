@@ -1,5 +1,6 @@
 import os
 import io
+import time
 from PIL import Image
 from celery import Celery
 from backend.services.pipeline import AnalysisPipeline
@@ -52,12 +53,14 @@ def process_analysis_task(self, filepath: str, patient_id: str, specimen_type: s
 
     try:
         # Run inference
+        _start = time.monotonic()
         result = pipeline.process_image(
-            image=image, 
-            patient_id=patient_id, 
-            specimen_type=specimen_type, 
+            image=image,
+            patient_id=patient_id,
+            specimen_type=specimen_type,
             sample_id=sample_id
         )
+        processing_time_ms = (time.monotonic() - _start) * 1000
 
         # Save to database
         db = SessionLocal()
@@ -77,7 +80,8 @@ def process_analysis_task(self, filepath: str, patient_id: str, specimen_type: s
                 heatmap_path=result.heatmap_path,
                 report=result.report,
                 review_required=result.review_required,
-                model_versions=result.model_versions
+                model_versions=result.model_versions,
+                processing_time_ms=processing_time_ms
             )
             db.add(db_record)
             db.commit()

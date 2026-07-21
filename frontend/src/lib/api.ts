@@ -109,6 +109,22 @@ export const getAnalysisHistory = async (skip = 0, limit = 100): Promise<Analysi
   return response.data;
 };
 
+export interface MetricsSummary {
+  images_analyzed: number;
+  images_analyzed_change_pct: number | null;
+  flagged_abnormalities: number;
+  flagged_rate_pct: number;
+  avg_processing_time_s: number | null;
+  avg_processing_time_change_s: number | null;
+}
+
+export const getMetricsSummary = async (range: string): Promise<MetricsSummary> => {
+  const response = await apiClient.get<MetricsSummary>('/history/summary', {
+    params: { range },
+  });
+  return response.data;
+};
+
 export const getAnalysisById = async (sampleId: string): Promise<AnalysisResponse> => {
   const response = await apiClient.get<AnalysisResponse>(`/history/${sampleId}`);
   return response.data;

@@ -27,3 +27,11 @@ class AnalysisResponse(BaseModel):
 class ReviewRequest(BaseModel):
     review_status: str
     notes: Optional[str] = None
+
+class MetricsSummary(BaseModel):
+    images_analyzed: int
+    images_analyzed_change_pct: Optional[float] = None
+    flagged_abnormalities: int
+    flagged_rate_pct: float
+    avg_processing_time_s: Optional[float] = None
+    avg_processing_time_change_s: Optional[float] = None

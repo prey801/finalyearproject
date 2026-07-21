@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Activity, ImageIcon, CheckCircle, Clock, Search, Filter, MoreVertical, FileText, ChevronRight, AlertCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { CaseSummaryPanel, CaseData } from '@/components/shared/CaseSummaryPanel';
-import { getAnalysisHistory } from '@/lib/api';
+import { getAnalysisHistory, getMetricsSummary, MetricsSummary } from '@/lib/api';
 
 
 
@@ -12,6 +12,7 @@ export default function Home() {
   const [timeFilter, setTimeFilter] = useState('today');
   const [selectedCase, setSelectedCase] = useState<CaseData | null>(null);
   const [recentActivity, setRecentActivity] = useState<CaseData[]>([]);
+  const [metrics, setMetrics] = useState<MetricsSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -38,6 +39,15 @@ export default function Home() {
         }
       });
   }, []);
+
+  useEffect(() => {
+    getMetricsSummary(timeFilter)
+      .then(setMetrics)
+      .catch(err => {
+        console.error("Failed to fetch metrics summary:", err);
+        setMetrics(null);
+      });
+  }, [timeFilter]);
 
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-8 relative">
@@ -91,19 +101,36 @@ export default function Home() {
               <span className="text-sm font-black uppercase tracking-wider">Images Analyzed</span>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-black tracking-tight text-foreground">142</span>
-              <span className="text-xs text-green-600 font-bold uppercase border border-green-600 px-1 bg-green-50">+12% vs last {timeFilter}</span>
+              <span className="text-4xl font-black tracking-tight text-foreground">
+                {metrics ? metrics.images_analyzed : '—'}
+              </span>
+              {metrics && metrics.images_analyzed_change_pct !== null && (
+                <span className={`text-xs font-bold uppercase border px-1 ${
+                  metrics.images_analyzed_change_pct >= 0
+                    ? 'text-green-600 border-green-600 bg-green-50'
+                    : 'text-destructive border-destructive bg-destructive/10'
+                }`}>
+                  {metrics.images_analyzed_change_pct >= 0 ? '+' : ''}
+                  {metrics.images_analyzed_change_pct.toFixed(0)}% vs last {timeFilter}
+                </span>
+              )}
             </div>
           </div>
-          
+
           <div className="bg-white border-4 border-foreground p-6 shadow-[6px_6px_0px_theme(colors.foreground)] flex flex-col gap-3 hover:-translate-y-1 transition-transform">
             <div className="flex items-center gap-3 text-foreground">
               <CheckCircle className="w-5 h-5 text-destructive" />
               <span className="text-sm font-black uppercase tracking-wider">Flagged Abnormalities</span>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-black tracking-tight text-foreground">24</span>
-              <span className="text-xs text-foreground font-bold uppercase border border-foreground px-1 bg-destructive/10">16.9% rate</span>
+              <span className="text-4xl font-black tracking-tight text-foreground">
+                {metrics ? metrics.flagged_abnormalities : '—'}
+              </span>
+              {metrics && (
+                <span className="text-xs text-foreground font-bold uppercase border border-foreground px-1 bg-destructive/10">
+                  {metrics.flagged_rate_pct}% rate
+                </span>
+              )}
             </div>
           </div>
 
@@ -113,8 +140,19 @@ export default function Home() {
               <span className="text-sm font-black uppercase tracking-wider">Avg Processing Time</span>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-black tracking-tight text-foreground">1.4s</span>
-              <span className="text-xs text-green-600 font-bold uppercase border border-green-600 px-1 bg-green-50">-0.2s vs last {timeFilter}</span>
+              <span className="text-4xl font-black tracking-tight text-foreground">
+                {metrics?.avg_processing_time_s != null ? `${metrics.avg_processing_time_s.toFixed(1)}s` : '—'}
+              </span>
+              {metrics && metrics.avg_processing_time_change_s !== null && (
+                <span className={`text-xs font-bold uppercase border px-1 ${
+                  metrics.avg_processing_time_change_s <= 0
+                    ? 'text-green-600 border-green-600 bg-green-50'
+                    : 'text-destructive border-destructive bg-destructive/10'
+                }`}>
+                  {metrics.avg_processing_time_change_s >= 0 ? '+' : ''}
+                  {metrics.avg_processing_time_change_s.toFixed(1)}s vs last {timeFilter}
+                </span>
+              )}
             </div>
           </div>
         </div>
