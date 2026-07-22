@@ -1,4 +1,3 @@
-## this project is not finished its under development thank you 
 # MedScope AI — Clinical Decision Support Platform for Malaria Diagnosis
 
 MedScope AI is a state-of-the-art clinical decision support system designed to assist laboratory professionals and clinicians by automating microscopy analysis for malaria diagnosis. It integrates advanced computer vision detection and classification models, explainability engines, uncertainty quantification, and a Retrieval-Augmented Generation (RAG) clinical copilot to generate verified diagnostic reports.
