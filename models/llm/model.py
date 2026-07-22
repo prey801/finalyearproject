@@ -16,16 +16,16 @@ class LLMGenerationError(Exception):
 
 class ClinicalLLMModel(BaseModel):
     """
-    LLM wrapper using GPT-4o (via OpenAI-compatible API on GitHub Models) to act as the Clinical Copilot.
+    LLM wrapper using an OpenAI-compatible API to act as the Clinical Copilot.
     Responsible for generating reports and explaining predictions.
     NOT responsible for diagnosis.
 
     Required environment variable:
-        GITHUB_TOKEN  — GitHub Personal Access Token for GPT-4o access.
+        OPENROUTER_API_KEY — OpenRouter API key (preferred; https://openrouter.ai).
     """
 
-    DEFAULT_MODEL = "gpt-4o-mini"
-    BASE_URL = "https://models.github.ai/inference"
+    DEFAULT_MODEL = "openai/gpt-4o-mini"
+    BASE_URL = "https://openrouter.ai/api/v1"
 
     def __init__(self, model_name: str = None):
         self.model_name = model_name
@@ -37,12 +37,18 @@ class ClinicalLLMModel(BaseModel):
             print("Warning: openai package not found. Using stub LLM. Install with: pip install openai")
             return
 
+        openrouter_api_key = os.environ.get("OPENROUTER_API_KEY")
         github_token = os.environ.get("GITHUB_TOKEN")
         dashscope_api_key = os.environ.get("DASHSCOPE_API_KEY")
 
-        if github_token:
-            api_key = github_token
+        if openrouter_api_key:
+            api_key = openrouter_api_key
             base_url = self.BASE_URL
+            if not self.model_name:
+                self.model_name = self.DEFAULT_MODEL
+        elif github_token:
+            api_key = github_token
+            base_url = "https://models.github.ai/inference"
             if not self.model_name:
                 self.model_name = "gpt-4o" # Highly capable reasoning model on GitHub Models
         elif dashscope_api_key:
@@ -51,7 +57,7 @@ class ClinicalLLMModel(BaseModel):
             if not self.model_name:
                 self.model_name = "qwen-plus"
         else:
-            print("Warning: Neither GITHUB_TOKEN nor DASHSCOPE_API_KEY set. LLM calls will use stub responses.")
+            print("Warning: Neither OPENROUTER_API_KEY, GITHUB_TOKEN, nor DASHSCOPE_API_KEY set. LLM calls will use stub responses.")
             return
 
         try:
