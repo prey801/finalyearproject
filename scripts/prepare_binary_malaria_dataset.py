@@ -45,15 +45,16 @@ def remap_dataset(data_yaml_path: Path) -> None:
     # old class index -> new class index (0 = red blood cell, 1 = infected)
     old_to_new = {i: (0 if i == rbc_old_idx else 1) for i in range(len(names))}
 
+    # Roboflow's YOLOv8 export writes train/val/test as "../<split>/images" —
+    # relative to wherever Ultralytics' own datasets_dir setting points, not
+    # literally relative to data.yaml's directory. The actual split folders
+    # always sit directly alongside data.yaml, so look for them there instead
+    # of trusting the yaml's path strings.
     root = data_yaml_path.parent
     label_dirs = []
-    for split_key in ("train", "val", "test"):
-        split_path = cfg.get(split_key)
-        if not split_path:
-            continue
-        images_dir = (root / split_path).resolve()
-        labels_dir = Path(str(images_dir).replace("/images", "/labels"))
-        if labels_dir.exists():
+    for split_name in ("train", "valid", "val", "test"):
+        labels_dir = root / split_name / "labels"
+        if labels_dir.exists() and labels_dir not in label_dirs:
             label_dirs.append(labels_dir)
 
     total_files = 0
