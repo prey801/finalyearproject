@@ -12,12 +12,18 @@ import { getAnalysisById, fetchImageAsBlobUrl } from '@/lib/api';
 // "New Analysis" workspace — so neither page has to guess the other's intent.
 export default function CaseReportPage({ params }: { params: Promise<{ sampleId: string }> }) {
   const { sampleId } = use(params);
-  const { analysisResult, setAnalysisResult, setImageUrl } = useActiveImageStore();
+  const { analysisResult, setAnalysisResult, setImageUrl, setExplainabilityMode } = useActiveImageStore();
   const [showReport, setShowReport] = useState(true);
 
   useEffect(() => {
     let blobUrl: string | null = null;
     let cancelled = false;
+
+    // The GradCAM toggle is global store state and would otherwise carry
+    // over from whatever case was viewed previously, silently opening this
+    // one in heatmap mode (and hiding its detection boxes) before the user
+    // ever touches the toggle.
+    setExplainabilityMode(false);
 
     getAnalysisById(sampleId)
       .then(async (result) => {
@@ -46,7 +52,7 @@ export default function CaseReportPage({ params }: { params: Promise<{ sampleId:
       cancelled = true;
       if (blobUrl) URL.revokeObjectURL(blobUrl);
     };
-  }, [sampleId, setAnalysisResult, setImageUrl]);
+  }, [sampleId, setAnalysisResult, setImageUrl, setExplainabilityMode]);
 
   return (
     <div className="h-full p-4 bg-background">

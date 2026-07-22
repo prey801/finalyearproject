@@ -9,17 +9,19 @@ import { useActiveImageStore } from '@/store/activeImageStore';
 // Always a fresh "New Analysis" workspace. Reopening a past case has its
 // own dedicated route: /dashboard/analyze/[sampleId].
 export default function AnalyzePage() {
-  const { analysisResult, setAnalysisResult, setImageUrl } = useActiveImageStore();
+  const { analysisResult, setAnalysisResult, setImageUrl, setExplainabilityMode } = useActiveImageStore();
   const [showReport, setShowReport] = useState(false);
 
   // The workspace store is global and outlives navigation, so a fresh visit
   // here must clear whatever the last session (or the last viewed case)
-  // left behind.
+  // left behind — including the GradCAM toggle, or a new result with a
+  // heatmap would silently open in heatmap mode with detection boxes hidden.
   useEffect(() => {
     setAnalysisResult(null);
     setImageUrl(null);
+    setExplainabilityMode(false);
     setShowReport(false);
-  }, [setAnalysisResult, setImageUrl]);
+  }, [setAnalysisResult, setImageUrl, setExplainabilityMode]);
 
   // Auto-open the report panel as soon as a new analysis result lands
   useEffect(() => {
