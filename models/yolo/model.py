@@ -22,12 +22,25 @@ class ObjectDetectionModel(BaseModel):
         self.classes = {0: "healthy_rbc", 1: "infected_rbc", 2: "parasite"}
         self.model = None
         self.is_custom = False
+        # Ultralytics' own default (0.25) is tuned for general-purpose/COCO-scale
+        # detectors. This checkpoint's real-world confidence runs much lower
+        # (confirmed empirically: max ~0.21 on a genuine positive detection) —
+        # at the 0.25 default every single detection gets filtered out, so
+        # every analysis silently reports 0 cells / 0% parasitemia regardless
+        # of what's actually in the image. Override via YOLO_CONF_THRESHOLD if
+        # a re-trained/re-calibrated checkpoint needs a different value.
+        self.conf_threshold = float(os.environ.get("YOLO_CONF_THRESHOLD", "0.1"))
         self.load_model()
 
     def load_model(self) -> None:
         from ultralytics import YOLO
-        # Check if we are running in a test environment or custom weights exist
-        self.weights_path = os.environ.get("YOLO_WEIGHTS_PATH", "runs/detect/yolo11n_malaria/weights/best.pt")
+        # Check if we are running in a test environment or custom weights exist.
+        # `or` (not the `.get(key, default)` fallback arg) matters here: the Colab
+        # notebook always *sets* YOLO_WEIGHTS_PATH, but to "" when it couldn't find
+        # the weight file under models/weights/ — `.get(key, default)` only falls
+        # back to default when the key is absent, so an explicit "" would otherwise
+        # slip through as the (nonexistent) weights_path and silently stub out.
+        self.weights_path = os.environ.get("YOLO_WEIGHTS_PATH") or "runs/detect/yolo11n_malaria/weights/best.pt"
         self.is_custom = os.path.exists(self.weights_path)
 
         # In a test mock context or if custom weights are found, load YOLO
@@ -42,9 +55,16 @@ class ObjectDetectionModel(BaseModel):
                 self.classes = self.model.names
                 logging.info("YOLO class names loaded from checkpoint: %s", self.classes)
         else:
-            logging.warning(
-                f"Custom YOLO weights not found at {self.weights_path}. "
-                "Running in STUB mode (returns empty detections to prevent misclassifying COCO classes as blood cells)."
+            # ERROR, not warning: this means every detection/parasitemia result
+            # from here on is a silent, always-empty stub — worth surfacing loudly
+            # rather than burying in Colab's scroll of INFO logs.
+            logging.error(
+                f"Custom YOLO weights not found at '{self.weights_path}' "
+                f"(YOLO_WEIGHTS_PATH={os.environ.get('YOLO_WEIGHTS_PATH')!r}). "
+                "Running in STUB mode: every analysis will report 0 detections and "
+                "0% parasitemia. Check that YOLO_WEIGHT_FILE in the Colab config "
+                "cell exactly matches the filename in DRIVE_WEIGHTS_DIR, and that "
+                "cell 5 (Load Trained Weights from Drive) printed 'Copied: ...' for it."
             )
             self.model = None
 
@@ -60,7 +80,7 @@ class ObjectDetectionModel(BaseModel):
             
         img = self.preprocess(image)
         # Run inference
-        results = self.model(img, device=self.device, verbose=False)
+        results = self.model(img, device=self.device, verbose=False, conf=self.conf_threshold)
         
         predictions = []
         for result in results:

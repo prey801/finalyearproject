@@ -48,7 +48,12 @@ class AnalysisPipeline:
                 logger.warning("Failed to load QualityAssessmentModel (e.g., weights missing). Disabling quality check. Error: %s", e)
                 self.quality_model = None
 
-            self.yolo_model     = ObjectDetectionModel(device=device)
+            try:
+                self.yolo_model = ObjectDetectionModel(device=device)
+            except Exception as e:
+                logger.warning("Failed to load ObjectDetectionModel (e.g., weights missing/invalid). Disabling detection. Error: %s", e)
+                self.yolo_model = None
+
             self.seg_model      = SegmentationModel(device=device)
             self.classifier     = DiseaseClassificationModel(device=device)
 
@@ -62,7 +67,7 @@ class AnalysisPipeline:
                 "AnalysisPipeline initialised | device=%s | "
                 "YOLO weights=%s | Swin weights loaded=%s",
                 device,
-                self.yolo_model.weights_path,
+                self.yolo_model.weights_path if self.yolo_model else "STUB (failed to load)",
                 self.classifier.weights_loaded,
             )
 
@@ -103,7 +108,7 @@ class AnalysisPipeline:
             quality = "good"
 
         # ── 2. Cell Detection (YOLOv11) ───────────────────────────────────────
-        detections = self.yolo_model.predict(image)
+        detections = self.yolo_model.predict(image) if self.yolo_model is not None else []
 
         infected_cells = 0
         total_cells    = 0
