@@ -56,7 +56,13 @@ def run_ingestion_pipeline(docs_dir: str, collection_name="clinical_guidelines",
                 id=str(uuid.uuid4()),
                 vector=vector.tolist(),
                 payload={
-                    "content": doc["content"],
+                    # "text" (not "content") — must match the key
+                    # QdrantVectorStore.search() reads on retrieval
+                    # (rag/vector_store/qdrant_client.py), or every ingested
+                    # chunk retrieves with real similarity scores but empty
+                    # text, silently degrading every RAG-grounded report to
+                    # the LLM's ungrounded general knowledge.
+                    "text": doc["content"],
                     **doc["metadata"]
                 }
             )
